@@ -4,12 +4,16 @@ dotenv.config();
 
 import app from "./app";
 import { isEnvDefined } from "./utils/envChecker";
+import { startSocket } from "./bot/baileys";
 
 // server
 const startServer = async () => {
     try {
         // check all env are defined
         isEnvDefined();
+
+        // Start baileys bot
+        startSocket();
 
         // // connect to mongodb
         // const db = new MongodbConnection(process.env.MONGO_DB_URL as string);

@@ -5,3 +5,4 @@
 # Backend
 /backend/.env
 /backend/node_modules
+/backend/src/auth_info/*
