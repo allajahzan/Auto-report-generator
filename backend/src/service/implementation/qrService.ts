@@ -16,25 +16,7 @@ export class QRService implements IQrService {
         try {
             const io = getIO();
 
-            startSocket(
-                phoneNumber,
-                (qr) => {
-                    const activeSockets = getActiveSockets();
-                    const socket = activeSockets[phoneNumber];
-
-                    if (socket) {
-                        io.to(socket).emit("get-qrcode", qr);
-                    }
-                },
-                (status, message) => {
-                    const activeSockets = getActiveSockets();
-                    const socket = activeSockets[phoneNumber];
-                    
-                    if (socket) {
-                        io.to(socket).emit("bot-status", status, message);
-                    }
-                }
-            );
+            
         } catch (err: unknown) {
             throw err;
         }

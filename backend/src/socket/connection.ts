@@ -1,5 +1,6 @@
 import { Server } from "socket.io";
 import http from "http";
+import { startSocket } from "../bot/baileys";
 
 // io instance
 let io: Server;
@@ -25,13 +26,33 @@ export const connectSocketIO = (server: http.Server) => {
             socket.on("get-started", (phoneNumber: string) => {
                 activeSockets[phoneNumber] = socket.id;
                 console.log(phoneNumber + " get started with id " + socket.id);
+
+                // Start baileys socket
+                startSocket(
+                    phoneNumber,
+                    (qr) => {
+                        const socketId = activeSockets[phoneNumber];
+                        console.log(socketId, "socketId to emit QR code");
+
+                        if (socketId) {
+                            io.to(socketId).emit("get-qrcode", qr);
+                        }
+                    },
+                    (status, message) => {
+                        const socketId = activeSockets[phoneNumber];
+                        console.log(socketId, "socketId to emit BOT status");
+
+                        if (socketId) {
+                            io.to(socketId).emit("bot-status", status, message);
+                        }
+                    }
+                );
             });
 
             // Refresh socket
             socket.on("refresh-socket", (phoneNumber: string) => {
                 delete activeSockets[phoneNumber];
                 console.log(phoneNumber + " refreshed socket");
-
                 console.log(activeSockets);
             });
         });

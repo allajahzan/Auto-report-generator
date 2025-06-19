@@ -8,19 +8,22 @@ import QRCode from "react-qr-code";
 import { botStatus, getQRcode, getStarted, refreshSocket } from "@/socket/bot";
 import { toast } from "sonner";
 import { sonnerStyle } from "@/lib/sonner-style";
+import SelectGroupModal from "./modal-select-group";
 
 // GetStarted Component
 function GetStarted() {
+    // Modal state
+    const [open, setOpen] = useState<boolean>(false);
+    const [groups, setGroups] = useState<{id: string, name: string}[] | []>([])
+
     // Phone number
     const pn = localStorage.getItem("phone-number") || "";
     const phoneNumber = useRef<string>(pn);
+    const error = useRef<HTMLParagraphElement>(null);
 
     // QR code
     const [qr, setQr] = useState<string>("");
-
     const [loading, setLoading] = useState<boolean>(false);
-
-    const error = useRef<HTMLParagraphElement>(null);
 
     // Handle get started
     const handleGetStarted = async () => {
@@ -37,11 +40,15 @@ function GetStarted() {
             return;
         }
 
-        // Store in localstorage
-        localStorage.setItem("phone-number", phoneNumber.current);
-
         // Emit event to get started
         getStarted(phoneNumber.current);
+
+        // Store phone number
+        localStorage.setItem("phone-number", phoneNumber.current);
+
+        if (error.current) error.current.innerHTML = "";
+
+        setLoading(true);
     };
 
     // Emit an event when page reload to refresh socket
@@ -67,47 +74,43 @@ function GetStarted() {
 
     // Get qr code
     useEffect(() => {
-        try {
-            getQRcode((qrCode: string) => {
-                setQr(qrCode);
-                toast("Scan this QR code, connect to report buddy 🔗", {
-                    position: "top-right",
-                    style: sonnerStyle,
-                });
-
-                setLoading(false);
+        getQRcode((qrCode: string) => {
+            setQr(qrCode);
+            toast("Scan this QR code, connect to report buddy 🔗", {
+                position: "top-right",
+                style: sonnerStyle,
             });
-        } catch (err: unknown) {
-            console.log(err);
-        }
+
+            setLoading(false);
+        });
     }, []);
 
     // Bot status
     useEffect(() => {
-        try {
-            botStatus((status, message) => {
-                if (status === "reconnecting") {
-                    setLoading(true);
-                } else if (status === "connected" || status === "already-connected") {
-                    setQr("");
-                    setLoading(false);
-                } else if (
-                    status === "expired" ||
-                    status === "disconnected" ||
-                    status === "error"
-                ) {
-                    setQr("");
-                    setLoading(false);
-                }
+        botStatus((status, message) => {
+            if (status === "reconnecting") {
+                setLoading(true);
+            } else if (status === "connected") {
+                setQr("");
+                setLoading(false);
+                setOpen(true);
+            } else if (
+                status === "expired" ||
+                status === "disconnected" ||
+                status === "error"
+            ) {
+                setQr("");
+                setLoading(false);
 
-                toast(message, {
-                    position: "top-right",
-                    style: sonnerStyle,
-                });
+                // Remove phone number
+                localStorage.removeItem("phone-number");
+            }
+
+            toast(message, {
+                position: "top-right",
+                style: sonnerStyle,
             });
-        } catch (err: unknown) {
-            console.log(err);
-        }
+        });
     }, []);
 
     return (
@@ -149,7 +152,7 @@ function GetStarted() {
                                 autoComplete="off"
                                 defaultValue={phoneNumber.current}
                                 onChange={(e) => (phoneNumber.current = e.target.value)}
-                                className="w-full p-5 pl-9 h-11 text-white font-medium dark:border-customBorder-dark focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-black"
+                                className="w-full p-5 pl-9 h-11 text-white text-sm font-medium dark:border-customBorder-dark focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-black"
                             />
                             <Phone className="w-4 h-4 absolute left-3 top-[14px] text-muted-foreground" />
                         </motion.div>
@@ -211,6 +214,9 @@ function GetStarted() {
                     </motion.div>
                 )}
             </div>
+
+            {/* Select group modal */}
+            <SelectGroupModal open={open} setOpen={setOpen} groups={groups} />
         </div>
     );
 }
