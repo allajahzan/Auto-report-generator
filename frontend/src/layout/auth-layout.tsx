@@ -1,30 +1,42 @@
 import { cn } from "@/lib/utils";
-import { Link, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 
 // Auth layout Component
 function AuthLayout() {
     return (
         <div
             className={cn(
-                "h-screen w-screen bg-my-bg-dark",
+                "h-screen flex flex-col bg-my-bg-dark",
                 "[background-size:20px_20px]",
                 "[background-image:radial-gradient(rgba(255,255,255,0.15)_1px,transparent_1px)]"
             )}
         >
-            <Outlet />
+            {/* Main Content */}
+            <main className="flex-1 flex items-center justify-center overflow-auto">
+                <Outlet />
+            </main>
 
-            <div className="fixed p-8 w-full flex flex-col items-center bottom-0 text-white">
-                <p>
-                    Crafted with 🤍 by{" "}
-                    <Link className="text-blue-300" to={""}>
-                        Ahsan allaj pk
-                    </Link>{" "}
-                    | 🔓 Open-Source on{" "}
-                    <Link className="text-blue-300" to={""}>
-                        GitHub
-                    </Link>
-                </p>
-            </div>
+            {/* Footer */}
+            <footer className="p-4 w-full text-center text-white text-base">
+                Crafted with 🤍 by{" "}
+                <a
+                    className="text-blue-300 underline-offset-2 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://github.com/allajahzan"
+                >
+                    Ahsan allaj pk
+                </a>{" "}
+                | 🔓 Open-Source on{" "}
+                <a
+                    className="text-blue-300 underline-offset-2 hover:underline"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://github.com/allajahzan/auto-report-generator"
+                >
+                    GitHub
+                </a>
+            </footer>
         </div>
     );
 }

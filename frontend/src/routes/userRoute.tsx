@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import GetStartedPage from "@/pages/auth/get-started";
 import AuthLayout from "@/layout/auth-layout";
 

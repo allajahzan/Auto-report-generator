@@ -4,11 +4,7 @@ import {
     DisconnectReason,
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
-import qrcode from "qrcode-terminal";
 import fs from "fs";
-import path from "path";
-
-const isGroupID = true;
 
 const students = [
     {
@@ -16,81 +12,108 @@ const students = [
         phoneNo: "7034661353",
     },
     {
-        name: "Anshad",
-        phoneNo: "9834671253",
+        name: "Ummachi",
+        phoneNo: "9605212846",
     },
 ];
 
-// Start baileys socket
-export const startSocket = async () => {
-    const { state, saveCreds } = await useMultiFileAuthState("src/auth_info");
+const activeUsers: { [userId: string]: boolean } = {};
 
-    const socket = makeWASocket({
-        auth: state,
+// Start baileys socket
+export const startSocket = async (
+    userId: string,
+    emitQR: (qr: string) => void,
+    emitStatus: (
+        status: "connected" | "disconnected" | "expired" | "reconnecting"
+    ) => void
+) => {
+    if (activeUsers[userId]) {
+        console.log("❗ Socket already running for", userId);
+        emitStatus("connected");
+        return;
+    }
+
+    activeUsers[userId] = true;
+
+    const authPath = `src/auth_info/${userId}`;
+    const { state, saveCreds } = await useMultiFileAuthState(authPath);
+    const sock = makeWASocket({ auth: state });
+
+    let qrTimeout: NodeJS.Timeout | null = null;
+    let isExpired = false;
+
+    // Save auth_info
+    sock.ev.on("creds.update", async () => {
+        await saveCreds();
     });
 
-    socket.ev.on("creds.update", saveCreds);
-
-    // Connection
-    socket.ev.on("connection.update", (update) => {
+    sock.ev.on("connection.update", (update) => {
         const { connection, lastDisconnect, qr } = update;
 
-        if (qr) {
-            console.log("Scan this qr code:", qr);
-            qrcode.generate(qr, { small: true });
+        if (qr && !isExpired) {
+            console.log("📸 QR is generated!");
+            emitQR(qr);
+
+            // Expire
+            qrTimeout = setTimeout(() => {
+                isExpired = true;
+                emitStatus("expired");
+                activeUsers[userId] = false;
+                console.log("💥 QR is Expired!");
+                return;
+
+                // try {
+                //     sock.end(new Boom("QR expired", { statusCode: 408 }));
+                // } catch { }
+            }, 30_000);
+        }
+
+        if (connection === "open") {
+            console.log("✅ Connected to BOT:", userId);
+            if (qrTimeout) clearTimeout(qrTimeout);
+            isExpired = false;
+            emitStatus("connected");
         }
 
         if (connection === "close") {
-            const isLoggedOut =
-                lastDisconnect?.error instanceof Boom &&
-                lastDisconnect.error.output.statusCode === DisconnectReason.loggedOut;
+            const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
+
+            const isLoggedOut = reason === DisconnectReason.loggedOut;
+
+            if (qrTimeout) clearTimeout(qrTimeout);
+            activeUsers[userId] = false;
 
             if (isLoggedOut) {
-                // Loggedout
-                console.log("User logged out from BOT server❌");
+                // Logged-out
+                console.log("🚪 Logged out from BOT:", userId);
+                fs.rmSync(authPath, { recursive: true, force: true });
 
-                // Delete auth_info folder
-                const folderPath = path.join(__dirname, "..", "auth_info");
-
-                fs.rm(folderPath, { recursive: true, force: true }, (err) => {
-                    if (err) {
-                        console.error("Failed to delete auth_info folder:", err);
-                    } else {
-                        console.log("auth_info folder deleted successfully✅");
-                    }
-                });
+                emitStatus("disconnected");
             } else {
-                // Reconnecting
-                console.log("Connection closed❌...Reconnecting...🔄");
-                startSocket();
+                // Reconnecting...after 3s
+                console.log(" 🔃 Reconnecting...");
+                emitStatus("reconnecting");
+
+                setTimeout(() => {
+                    startSocket(userId, emitQR, emitStatus);
+                }, 3000);
             }
-        } else if (connection === "open") {
-            console.log("BOT is connected✅");
-        } else {
-            console.log("BOT is connecting...🔄");
         }
     });
 
     // New messages
-    socket.ev.on("messages.upsert", async ({ messages, type, requestId }) => {
-        if (isGroupID && type === "notify" && messages[0].message) {
+    sock.ev.on("messages.upsert", async ({ messages, type }) => {
+        if (type === "notify" && messages[0].message) {
             const msg = messages[0];
             const senderId = msg.key.remoteJid;
+            const isMe = msg.key.fromMe;
             const phoneNo = senderId?.split("@")[0].slice(2);
 
             const student = students.find((std) => std.phoneNo === phoneNo);
 
-            if (msg.message?.audioMessage) {
-            }
-
-            console.log(
-                "PhoneNo:",
-                phoneNo,
-                "student:",
-                student?.name || "Unknown",
-                "Message:",
-                msg.message
-            );
+            // if (!isMe) {
+            console.log(student?.name, "Message:", msg.message);
+            // }
         }
     });
 };
