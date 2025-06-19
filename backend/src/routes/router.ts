@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { testRoute } from "./testRoute";
+import { qrRoute } from "./qrRoute";
 
 const router = Router();
 
-router.use('/test', testRoute);
+router.use('/qr-code', qrRoute);
 
 export default router;

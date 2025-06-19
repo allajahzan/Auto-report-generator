@@ -4,6 +4,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-my-bg: oklch(0.06 0.005 270);       
+  --color-my-bg-dark: oklch(0.14 0 0);
+  --color-my-bg-light: oklch(0.12 0 0);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
