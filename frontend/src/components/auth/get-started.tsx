@@ -3,104 +3,107 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Loader2, Phone, QrCode } from "lucide-react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
-import { CustomError } from "@/utils/error";
 import { useEffect, useRef, useState } from "react";
-import { BASE_URL } from "@/service/base-url";
 import QRCode from "react-qr-code";
-import { botStatus, getQRcode } from "@/socket/bot";
+import { botStatus, getQRcode, getStarted, refreshSocket } from "@/socket/bot";
+import { toast } from "sonner";
+import { sonnerStyle } from "@/lib/sonner-style";
 
 // GetStarted Component
 function GetStarted() {
-    console.log("re renders");
-
     // Phone number
-    const phoneNumber = useRef<string>("");
+    const pn = localStorage.getItem("phone-number") || "";
+    const phoneNumber = useRef<string>(pn);
 
     // QR code
     const [qr, setQr] = useState<string>("");
 
     const [loading, setLoading] = useState<boolean>(false);
 
-    // Get Started
-    const { isLoading, error, isError, refetch } = useQuery({
-        queryKey: ["gr-code"],
-        queryFn: async () => {
-            setLoading(true);
-
-            const resp = await fetch(
-                `${BASE_URL}/qr-code?phoneNumber=${phoneNumber.current}`,
-                {
-                    method: "GET",
-                }
-            );
-
-            if (!resp.ok) {
-                throw new CustomError(resp.statusText, resp.status);
-            }
-
-            return await resp.json();
-        },
-        retry: false,
-        enabled: false,
-        refetchOnWindowFocus: false,
-        staleTime: 0,
-    });
+    const error = useRef<HTMLParagraphElement>(null);
 
     // Handle get started
-    const handleGetStarted = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleGetStarted = async () => {
+        let regex = /^(?!0{10})([1-9][0-9]{9})$/;
 
-        if (!phoneNumber) {
-            alert("Enter phone number");
+        if (!phoneNumber.current) {
+            if (error.current) error.current.innerHTML = "Enter phone number";
             return;
         }
 
-        refetch();
+        if (!regex.test(phoneNumber.current)) {
+            if (error.current)
+                error.current.innerHTML = "Enter 10 digits valid phone number";
+            return;
+        }
+
+        // Store in localstorage
+        localStorage.setItem("phone-number", phoneNumber.current);
+
+        // Emit event to get started
+        getStarted(phoneNumber.current);
     };
 
+    // Emit an event when page reload to refresh socket
     useEffect(() => {
-        if (isError && !isLoading) {
-            setLoading(false);
+        const handleLoad = () => {
+            const navType = performance.getEntriesByType(
+                "navigation"
+            )[0] as PerformanceNavigationTiming;
 
-            if (error instanceof CustomError) {
-                console.log(error.message, error.status);
-            } else {
-                console.log((error as Error).message);
+            if (navType?.type === "reload") {
+                if (phoneNumber.current) {
+                    refreshSocket(phoneNumber.current);
+                }
             }
-        }
-    }, [isError, isLoading, setLoading]);
+        };
+
+        window.addEventListener("load", handleLoad);
+
+        return () => {
+            window.removeEventListener("load", handleLoad);
+        };
+    }, []);
 
     // Get qr code
     useEffect(() => {
-        if (!isError) {
-            try {
-                getQRcode((qrCode: string) => {
-                    setQr(qrCode);
-                    setLoading(false);
+        try {
+            getQRcode((qrCode: string) => {
+                setQr(qrCode);
+                toast("Scan this QR code, connect to report buddy 🔗", {
+                    position: "top-right",
+                    style: sonnerStyle,
                 });
-            } catch (err: unknown) {
-                console.log(err);
-            }
-        }
-    }, [isError]);
 
-    // Bot connection
+                setLoading(false);
+            });
+        } catch (err: unknown) {
+            console.log(err);
+        }
+    }, []);
+
+    // Bot status
     useEffect(() => {
         try {
-            botStatus((status) => {
-                if (status === "connected") {
-                    console.log("Bot is connected");
-                } else if (status === "disconnected") {
-                    console.log("Bot is disconnected");
-                } else if (status === "expired") {
-                    console.log("qr expired");
-                } else {
-                    console.log("Bot is reconnecting");
+            botStatus((status, message) => {
+                if (status === "reconnecting") {
+                    setLoading(true);
+                } else if (status === "connected" || status === "already-connected") {
+                    setQr("");
+                    setLoading(false);
+                } else if (
+                    status === "expired" ||
+                    status === "disconnected" ||
+                    status === "error"
+                ) {
+                    setQr("");
+                    setLoading(false);
                 }
 
-                setQr("");
-                setLoading(false);
+                toast(message, {
+                    position: "top-right",
+                    style: sonnerStyle,
+                });
             });
         } catch (err: unknown) {
             console.log(err);
@@ -131,27 +134,30 @@ function GetStarted() {
                     Buddy you never had.
                 </motion.p>
 
-                <form
-                    onSubmit={handleGetStarted}
-                    className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-md"
-                >
-                    <motion.div
-                        initial={{ opacity: 0, y: 30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
-                        className="relative shadow-md rounded-lg w-full"
-                    >
-                        <Input
-                            id="work"
-                            type="text"
-                            placeholder="Enter mobile number"
-                            autoComplete="off"
-                            defaultValue={phoneNumber.current}
-                            onChange={(e) => (phoneNumber.current = e.target.value)}
-                            className="w-full p-5 pl-9 h-11 text-white font-medium dark:border-customBorder-dark focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-black"
-                        />
-                        <Phone className="w-4 h-4 absolute left-3 top-[14px] text-muted-foreground" />
-                    </motion.div>
+                <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-md">
+                    <div className="relative flex flex-col gap-2">
+                        <motion.div
+                            initial={{ opacity: 0, y: 30 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.8, duration: 0.6, ease: "easeOut" }}
+                            className="shadow-md rounded-lg w-full"
+                        >
+                            <Input
+                                id="work"
+                                type="text"
+                                placeholder="Enter mobile number"
+                                autoComplete="off"
+                                defaultValue={phoneNumber.current}
+                                onChange={(e) => (phoneNumber.current = e.target.value)}
+                                className="w-full p-5 pl-9 h-11 text-white font-medium dark:border-customBorder-dark focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-black"
+                            />
+                            <Phone className="w-4 h-4 absolute left-3 top-[14px] text-muted-foreground" />
+                        </motion.div>
+                        <p
+                            ref={error}
+                            className="absolute left-0 top-[-1.5rem] font-medium text-xs text-red-600"
+                        ></p>
+                    </div>
 
                     <motion.div
                         initial={{ opacity: 0, y: 30 }}
@@ -160,8 +166,11 @@ function GetStarted() {
                         className="h-full flex items-center shadow-md rounded-lg"
                     >
                         <Button
-                            type="submit"
-                            disabled={loading}
+                            type="button"
+                            disabled={loading || qr ? true : false}
+                            onClick={
+                                (loading || qr ? true : false) ? () => { } : handleGetStarted
+                            }
                             className="h-11 w-full sm:w-44 text-center cursor-pointer disabled:cursor-not-allowed shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
                         >
                             {loading ? (
@@ -177,7 +186,7 @@ function GetStarted() {
                             )}
                         </Button>
                     </motion.div>
-                </form>
+                </div>
             </div>
 
             {/* Right Side */}
@@ -192,9 +201,14 @@ function GetStarted() {
                         alt="Student illustration"
                     />
                 ) : (
-                    <div className="flex items-center justify-center p-4 bg-white">
+                    <motion.div
+                        initial={{ opacity: 0, y: -30 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
+                        className="flex items-center justify-center p-4 bg-white"
+                    >
                         <QRCode value={qr} />
-                    </div>
+                    </motion.div>
                 )}
             </div>
         </div>

@@ -27,7 +27,7 @@ function AuthLayout() {
                 >
                     Ahsan allaj pk
                 </a>{" "}
-                | 🔓 Open-Source on{" "}
+                | 🔓 open-source on{" "}
                 <a
                     className="text-blue-300 underline-offset-2 hover:underline"
                     target="_blank"

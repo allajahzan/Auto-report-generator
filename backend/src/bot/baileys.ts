@@ -5,6 +5,7 @@ import {
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import fs from "fs";
+import { getIO } from "../socket/connection";
 
 const students = [
     {
@@ -24,96 +25,112 @@ export const startSocket = async (
     userId: string,
     emitQR: (qr: string) => void,
     emitStatus: (
-        status: "connected" | "disconnected" | "expired" | "reconnecting"
+        status:
+            | "connected"
+            | "already-connected"
+            | "disconnected"
+            | "expired"
+            | "reconnecting"
+            | "error",
+        message: string
     ) => void
 ) => {
-    if (activeUsers[userId]) {
-        console.log("❗ Socket already running for", userId);
-        emitStatus("connected");
-        return;
-    }
-
-    activeUsers[userId] = true;
-
-    const authPath = `src/auth_info/${userId}`;
-    const { state, saveCreds } = await useMultiFileAuthState(authPath);
-    const sock = makeWASocket({ auth: state });
-
-    let qrTimeout: NodeJS.Timeout | null = null;
-    let isExpired = false;
-
-    // Save auth_info
-    sock.ev.on("creds.update", async () => {
-        await saveCreds();
-    });
-
-    sock.ev.on("connection.update", (update) => {
-        const { connection, lastDisconnect, qr } = update;
-
-        if (qr && !isExpired) {
-            console.log("📸 QR is generated!");
-            emitQR(qr);
-
-            // Expire
-            qrTimeout = setTimeout(() => {
-                isExpired = true;
-                emitStatus("expired");
-                activeUsers[userId] = false;
-                console.log("💥 QR is Expired!");
-                return;
-
-                // try {
-                //     sock.end(new Boom("QR expired", { statusCode: 408 }));
-                // } catch { }
-            }, 30_000);
+    try {
+        if (activeUsers[userId]) {
+            console.log("❗ Socket already running for", userId);
+            emitStatus("already-connected", "Reconnected to report buddy 👌");
+            return;
         }
 
-        if (connection === "open") {
-            console.log("✅ Connected to BOT:", userId);
-            if (qrTimeout) clearTimeout(qrTimeout);
-            isExpired = false;
-            emitStatus("connected");
-        }
+        const authPath = `src/auth_info/${userId}`;
+        const { state, saveCreds } = await useMultiFileAuthState(authPath);
+        const sock = makeWASocket({ auth: state });
 
-        if (connection === "close") {
-            const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
+        // Save auth_info
+        sock.ev.on("creds.update", async () => {
+            await saveCreds();
+        });
 
-            const isLoggedOut = reason === DisconnectReason.loggedOut;
+        let currentQR: string | null = null;
+        let ATTEMPT = 5;
+        let RETRIES = 0;
 
-            if (qrTimeout) clearTimeout(qrTimeout);
-            activeUsers[userId] = false;
+        sock.ev.on("connection.update", (update) => {
+            const { connection, lastDisconnect, qr } = update;
 
-            if (isLoggedOut) {
-                // Logged-out
-                console.log("🚪 Logged out from BOT:", userId);
-                fs.rmSync(authPath, { recursive: true, force: true });
+            if (qr) {
+                if (currentQR && currentQR !== qr) {
+                    // New QR received, previous one expired
+                    console.log("⏰ Previous QR expired.");
+                    emitStatus("expired", "This QR code expired, get started again 🚀");
+                    currentQR = null;
+                    sock.ws.close();
+                    return;
+                }
 
-                emitStatus("disconnected");
-            } else {
-                // Reconnecting...after 3s
-                console.log(" 🔃 Reconnecting...");
-                emitStatus("reconnecting");
-
-                setTimeout(() => {
-                    startSocket(userId, emitQR, emitStatus);
-                }, 3000);
+                currentQR = qr;
+                console.log("📸 QR is generated!");
+                emitQR(qr);
             }
-        }
-    });
 
-    // New messages
-    sock.ev.on("messages.upsert", async ({ messages, type }) => {
-        if (type === "notify" && messages[0].message) {
-            const msg = messages[0];
-            const senderId = msg.key.remoteJid;
-            const isMe = msg.key.fromMe;
-            const phoneNo = senderId?.split("@")[0].slice(2);
+            if (connection === "open") {
+                console.log("✅ Connected to BOT:", userId);
+                activeUsers[userId] = true;
 
-            const student = students.find((std) => std.phoneNo === phoneNo);
+                emitStatus("connected", "Connected to report buddy 👏");
+            }
 
-            // if (!isMe) {
-            console.log(student?.name, "Message:", msg.message);
-            // }
-        }
-    });
+            if (connection === "close") {
+                const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
+
+                const isLoggedOut = reason === DisconnectReason.loggedOut;
+
+                if (isLoggedOut) {
+                    // Logged-out
+                    console.log("🚪 Logged out from BOT:", userId);
+                    fs.rmSync(authPath, { recursive: true, force: true });
+
+                    emitStatus("disconnected", "Logged-out from report buddy 👎");
+                } else {
+                    if (currentQR) { // Only if currentQR available
+                        if (ATTEMPT > RETRIES) {
+                            // Reconnecting...after 3s
+                            console.log(" 🔃 Reconnecting...");
+                            // emitStatus("reconnecting", "Reconnecting to report buddy 🔃");
+
+                            setTimeout(() => {
+                                startSocket(userId, emitQR, emitStatus);
+                            }, 3000);
+
+                            RETRIES++;
+                        } else {
+                            // Disconnected
+                            console.log("🚪 Disconnected from BOT:", userId);
+                            emitStatus("error", "Failed to reconnect to report buddy 💥");
+                            return;
+                        }
+                    }
+                }
+            }
+        });
+
+        // New messages
+        sock.ev.on("messages.upsert", async ({ messages, type }) => {
+            if (type === "notify" && messages[0].message) {
+                const msg = messages[0];
+                const senderId = msg.key.remoteJid;
+                const isMe = msg.key.fromMe;
+                const phoneNo = senderId?.split("@")[0].slice(2);
+
+                const student = students.find((std) => std.phoneNo === phoneNo);
+
+                // if (!isMe) {
+                console.log(student?.name, "Message:", msg.message);
+                // }
+            }
+        });
+    } catch (err) {
+        console.error("💥 Error creating socket or during startup:", err);
+        emitStatus("error", "Failed to connect to report buddy 💥");
+    }
 };
