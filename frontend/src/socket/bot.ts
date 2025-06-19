@@ -1,5 +1,10 @@
 import { socket } from "./connection";
 
+/**
+ * Emits the "refresh-socket" event to the server with the given phone number.
+ * This is used to refresh the socket connection after a page reload.
+ * @param phoneNumber - Phone number to be passed to the server.
+ */
 export const refreshSocket = (phoneNumber: string) => {
     try {
         socket.emit("refresh-socket", phoneNumber);
@@ -8,6 +13,11 @@ export const refreshSocket = (phoneNumber: string) => {
     }
 };
 
+/**
+ * Emits the "get-started" event to the server with the given phone number.
+ * This is used to start the QR code generation process.
+ * @param phoneNumber - Phone number to be passed to the server.
+ */
 export const getStarted = (phoneNumber: string) => {
     try {
         socket.emit("get-started", phoneNumber);
@@ -37,13 +47,7 @@ export const getQRcode = (callback: (qrCode: string) => void) => {
  */
 export const botStatus = (
     callback: (
-        status:
-            | "connected"
-            | "already-connected"
-            | "disconnected"
-            | "expired"
-            | "reconnecting"
-            | "error",
+        status: "connected" | "disconnected" | "reconnecting" | "expired" | "error",
         message: string
     ) => void
 ) => {

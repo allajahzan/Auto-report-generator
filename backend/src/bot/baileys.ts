@@ -7,41 +7,29 @@ import { Boom } from "@hapi/boom";
 import fs from "fs";
 import { getIO } from "../socket/connection";
 
-const students = [
-    {
-        name: "Ahsan allaj pk",
-        phoneNo: "7034661353",
-    },
-    {
-        name: "Ummachi",
-        phoneNo: "9605212846",
-    },
-];
-
+// Active users
 const activeUsers: { [userId: string]: boolean } = {};
+
+// Socket-io
+const io = getIO();
 
 // Start baileys socket
 export const startSocket = async (
     userId: string,
     emitQR: (qr: string) => void,
     emitStatus: (
-        status:
-            | "connected"
-            | "already-connected"
-            | "disconnected"
-            | "expired"
-            | "reconnecting"
-            | "error",
+        status: "connected" | "disconnected" | "reconnecting" | "expired" | "error",
         message: string
     ) => void
 ) => {
     try {
         if (activeUsers[userId]) {
             console.log("❗ Socket already running for", userId);
-            emitStatus("already-connected", "Reconnected to report buddy 👌");
+            emitStatus("connected", "Reconnected to report buddy 👌");
             return;
         }
 
+        // auth_info
         const authPath = `src/auth_info/${userId}`;
         const { state, saveCreds } = await useMultiFileAuthState(authPath);
         const sock = makeWASocket({ auth: state });
@@ -55,14 +43,15 @@ export const startSocket = async (
         let ATTEMPT = 5;
         let RETRIES = 0;
 
-        sock.ev.on("connection.update", (update) => {
+        // Connection
+        sock.ev.on("connection.update", async(update) => {
             const { connection, lastDisconnect, qr } = update;
 
             if (qr) {
                 if (currentQR && currentQR !== qr) {
-                    // New QR received, previous one expired
+                    // New QR generated, previous one expired
                     console.log("⏰ Previous QR expired.");
-                    emitStatus("expired", "This QR code expired, get started again 🚀");
+                    emitStatus("expired", "QR code is expired, get started again 🚀");
                     currentQR = null;
                     sock.ws.close();
                     return;
@@ -78,11 +67,30 @@ export const startSocket = async (
                 activeUsers[userId] = true;
 
                 emitStatus("connected", "Connected to report buddy 👏");
+
+                // ✅ Fetch groups
+                try {
+                    const groups = await sock.groupFetchAllParticipating();
+                    const groupList = Object.values(groups).map((group) => ({
+                        id: group.id,
+                        name: group.subject,
+                    }));
+
+                    console.log("📃 WhatsApp Groups:");
+                    groupList.forEach((group) => {
+                        console.log(`📌 ${group.name} — ${group.id}`);
+                    });
+
+                    io.emit("group-list", groupList);
+                } catch (err) {
+                    console.error("❌ Failed to fetch groups:", err);
+                }
             }
 
             if (connection === "close") {
-                const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
+                delete activeUsers[userId];
 
+                const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
                 const isLoggedOut = reason === DisconnectReason.loggedOut;
 
                 if (isLoggedOut) {
@@ -92,7 +100,8 @@ export const startSocket = async (
 
                     emitStatus("disconnected", "Logged-out from report buddy 👎");
                 } else {
-                    if (currentQR) { // Only if currentQR available
+                    // Only if currentQR available
+                    if (currentQR) {
                         if (ATTEMPT > RETRIES) {
                             // Reconnecting...after 3s
                             console.log(" 🔃 Reconnecting...");
@@ -122,11 +131,7 @@ export const startSocket = async (
                 const isMe = msg.key.fromMe;
                 const phoneNo = senderId?.split("@")[0].slice(2);
 
-                const student = students.find((std) => std.phoneNo === phoneNo);
-
-                // if (!isMe) {
-                console.log(student?.name, "Message:", msg.message);
-                // }
+                console.log("Message:", msg.message);
             }
         });
     } catch (err) {
