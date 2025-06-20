@@ -6,7 +6,7 @@ function AuthLayout() {
     return (
         <div
             className={cn(
-                "h-screen flex flex-col bg-my-bg-dark",
+                "h-screen flex flex-col bg-my-bg-light",
                 "[background-size:20px_20px]",
                 "[background-image:radial-gradient(rgba(255,255,255,0.15)_1px,transparent_1px)]"
             )}

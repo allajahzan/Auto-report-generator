@@ -6,7 +6,7 @@ import { getSocket } from "../bot/socket-store";
 // io instance
 let io: Server;
 
-let activeSockets: { [userId: string]: string } = {};
+let activeUsers: { [userId: string]: string } = {};
 
 /**
  * Connects socket.io to the server and sets up the chat, and video call sockets also notification events.
@@ -23,9 +23,16 @@ export const connectSocketIO = (server: http.Server) => {
         io.on("connection", (socket) => {
             console.log("Socket-io connected with id", socket.id);
 
+            // Refresh socket
+            socket.on("refresh-socket", (phoneNumber: string) => {
+                delete activeUsers[phoneNumber];
+                console.log(phoneNumber + " refreshed socket");
+                console.log(activeUsers);
+            });
+
             // Get started
             socket.on("get-started", (phoneNumber: string) => {
-                activeSockets[phoneNumber] = socket.id;
+                activeUsers[phoneNumber] = socket.id;
                 console.log(phoneNumber + " get started with id " + socket.id);
 
                 // Start baileys socket
@@ -33,7 +40,7 @@ export const connectSocketIO = (server: http.Server) => {
                     phoneNumber,
                     socket.id,
                     (qr) => {
-                        const socketId = activeSockets[phoneNumber];
+                        const socketId = activeUsers[phoneNumber];
                         console.log(socketId, "socketId to emit QR code");
 
                         if (socketId) {
@@ -41,7 +48,7 @@ export const connectSocketIO = (server: http.Server) => {
                         }
                     },
                     (status, message) => {
-                        const socketId = activeSockets[phoneNumber];
+                        const socketId = activeUsers[phoneNumber];
                         console.log(socketId, "socketId to emit BOT status");
 
                         if (socketId) {
@@ -61,27 +68,38 @@ export const connectSocketIO = (server: http.Server) => {
                         .emit(
                             "bot-status",
                             "error",
-                            "Connection failed in report buddy 💥"
+                            "Connection lost with report buddy 💥"
                         );
                 }
 
                 const metadata = await sock.groupMetadata(groupId);
 
-                const participants = metadata.participants
-                    .filter((p) => !p.admin)
-                    .map((p) => ({
-                        phoneNumber: p.id.split("@")[0].slice(2),
-                        name: p.name || "",
-                    }));
+                const participants = await Promise.all(
+                    metadata.participants
+                        .filter((p) => !p.admin)
+                        .map(async (p) => {
+                            let profilePic = "";
+                            try {
+                                profilePic =
+                                    (await sock.profilePictureUrl(p.id, "image")) || "";
+                            } catch (err) {
+                                profilePic = ""; // default
+                            }
+
+                            return {
+                                name: p.name || "",
+                                phoneNumber: p.id.split("@")[0].slice(2),
+                                profilePic,
+                            };
+                        })
+                );
 
                 io.to(socket.id).emit("participants-list", participants);
             });
 
-            // Refresh socket
-            socket.on("refresh-socket", (phoneNumber: string) => {
-                delete activeSockets[phoneNumber];
-                console.log(phoneNumber + " refreshed socket");
-                console.log(activeSockets);
+            // Submit group and participants details
+            socket.on("submit-group-and-participants", (groupId, participants) => {
+                console.log("submit-group-and-participants", groupId, participants);
             });
         });
     } catch (err: unknown) {
@@ -91,4 +109,4 @@ export const connectSocketIO = (server: http.Server) => {
 
 // Export the socket.io instance
 export const getIO = () => io;
-export const getActiveSockets = () => activeSockets;
+export const getActiveSockets = () => activeUsers;

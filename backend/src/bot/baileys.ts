@@ -52,6 +52,13 @@ export const startSocket = async (
                     console.log("⏰ Previous QR expired.");
                     emitStatus("expired", "QR code is expired, now get started again 🚀");
                     currentQR = null;
+
+                    try {
+                        fs.rmSync(authPath, { recursive: true, force: true });
+                    } catch (err: unknown) {
+                        console.log(err, "Failed to delete auth_info");
+                    }
+
                     sock.ws.close();
                     return;
                 }
@@ -68,7 +75,10 @@ export const startSocket = async (
                 const connectedPhone = connectedId?.split(":")[0].slice(2);
 
                 if (connectedPhone !== phoneNumber) {
-                    emitStatus("error", "Scanned WhatsApp doesn't match provided phone number 😒");
+                    emitStatus(
+                        "error",
+                        "Scanned WhatsApp doesn't match provided phone number 😒"
+                    );
 
                     // Logout completely
                     try {
@@ -142,7 +152,10 @@ export const startSocket = async (
 
                 // Forbidden
                 if (reason === DisconnectReason.forbidden) {
-                    emitStatus("error", "Scanned WhatsApp doesn't match provided phone number 😒");
+                    emitStatus(
+                        "error",
+                        "Scanned WhatsApp doesn't match provided phone number 😒"
+                    );
                 }
 
                 // Logged-out

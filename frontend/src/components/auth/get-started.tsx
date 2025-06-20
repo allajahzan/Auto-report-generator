@@ -1,7 +1,7 @@
 import student from "@/assets/images/student.png";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Files, Loader2, Phone } from "lucide-react";
+import { Link, Loader2, Phone } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
@@ -169,7 +169,7 @@ function GetStarted() {
                                 autoComplete="off"
                                 defaultValue={phoneNumber.current}
                                 onChange={(e) => (phoneNumber.current = e.target.value)}
-                                className="w-full p-5 pl-9 h-11 text-white text-sm font-medium dark:border-customBorder-dark focus:outline-none focus:ring-2 focus:ring-zinc-300 focus:ring-offset-2 focus:ring-offset-black"
+                                className="w-full p-5 pl-9 h-11 text-white text-sm font-medium border-2 border-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 focus:ring-offset-black"
                             />
                             <Phone className="w-4 h-4 absolute left-3 top-[14px] text-muted-foreground" />
                         </motion.div>
@@ -200,7 +200,7 @@ function GetStarted() {
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-2">
-                                    <Files className="w-5 h-5" />
+                                    <Link className="w-5 h-5" />
                                     <p>Get Started</p>
                                 </span>
                             )}
