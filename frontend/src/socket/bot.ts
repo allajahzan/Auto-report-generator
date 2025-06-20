@@ -1,3 +1,4 @@
+import type { IGroup } from "@/components/auth/modal-select-group";
 import { socket } from "./connection";
 
 /**
@@ -47,13 +48,43 @@ export const getQRcode = (callback: (qrCode: string) => void) => {
  */
 export const botStatus = (
     callback: (
-        status: "connected" | "disconnected" | "reconnecting" | "expired" | "error",
+        status: "connected" | "re-connect" | "disconnected" | "expired" | "error",
         message: string
     ) => void
 ) => {
     try {
         socket.on("bot-status", (status, message) => {
             callback(status, message);
+        });
+    } catch (err: unknown) {
+        console.log(err);
+    }
+};
+
+export const groupList = (callback: (groupList: IGroup[]) => void) => {
+    try {
+        socket.on("group-list", (groupList: IGroup[]) => {
+            callback(groupList);
+        });
+    } catch (err: unknown) {
+        console.log(err);
+    }
+};
+
+export const getParticipants = (phoneNumber: string, groupId: string) => {
+    try {
+        socket.emit("get-participants", phoneNumber, groupId);
+    } catch (err: unknown) {
+        console.log(err);
+    }
+};
+
+export const pariticipantsList = (
+    callback: (participants: { phoneNumber: string; name: string }[]) => void
+) => {
+    try {
+        socket.on("participants-list", (paricipants) => {
+            callback(paricipants);
         });
     } catch (err: unknown) {
         console.log(err);

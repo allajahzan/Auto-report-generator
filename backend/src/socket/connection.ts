@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import http from "http";
 import { startSocket } from "../bot/baileys";
+import { getSocket } from "../bot/socket-store";
 
 // io instance
 let io: Server;
@@ -30,6 +31,7 @@ export const connectSocketIO = (server: http.Server) => {
                 // Start baileys socket
                 startSocket(
                     phoneNumber,
+                    socket.id,
                     (qr) => {
                         const socketId = activeSockets[phoneNumber];
                         console.log(socketId, "socketId to emit QR code");
@@ -49,6 +51,32 @@ export const connectSocketIO = (server: http.Server) => {
                 );
             });
 
+            // Get paricipants of a perticular group
+            socket.on("get-participants", async (phoneNumber, groupId) => {
+                const sock = getSocket(phoneNumber);
+
+                if (!sock) {
+                    return io
+                        .to(socket.id)
+                        .emit(
+                            "bot-status",
+                            "error",
+                            "Connection failed in report buddy 💥"
+                        );
+                }
+
+                const metadata = await sock.groupMetadata(groupId);
+
+                const participants = metadata.participants
+                    .filter((p) => !p.admin)
+                    .map((p) => ({
+                        phoneNumber: p.id.split("@")[0].slice(2),
+                        name: p.name || "",
+                    }));
+
+                io.to(socket.id).emit("participants-list", participants);
+            });
+
             // Refresh socket
             socket.on("refresh-socket", (phoneNumber: string) => {
                 delete activeSockets[phoneNumber];
@@ -57,7 +85,7 @@ export const connectSocketIO = (server: http.Server) => {
             });
         });
     } catch (err: unknown) {
-        console.log(err);
+        console.log(err, "my errrroorrrrrrrrr");
     }
 };
 
