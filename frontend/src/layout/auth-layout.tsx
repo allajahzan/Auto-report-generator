@@ -6,7 +6,7 @@ function AuthLayout() {
     return (
         <div
             className={cn(
-                "h-screen flex flex-col bg-my-bg-dark",
+                "h-screen flex flex-col bg-my-bg-light",
                 "[background-size:20px_20px]",
                 "[background-image:radial-gradient(rgba(255,255,255,0.15)_1px,transparent_1px)]"
             )}
@@ -17,7 +17,7 @@ function AuthLayout() {
             </main>
 
             {/* Footer */}
-            <footer className="p-4 w-full text-center text-white text-base">
+            <footer className="p-4 w-full text-center text-white text-sm md:text-base">
                 Crafted with 🤍 by{" "}
                 <a
                     className="text-blue-300 underline-offset-2 hover:underline"

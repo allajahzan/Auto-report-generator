@@ -16,7 +16,7 @@ const startServer = async () => {
 
         // connect to mongodb
         const db = new MongodbConnection(process.env.MONGO_DB_URL as string);
-        await db.retryConnection();
+        // await db.retryConnection();
 
         // Server
         const server = http.createServer(app);
@@ -29,7 +29,7 @@ const startServer = async () => {
             console.log("Bot server is running on port", process.env.PORT)
         );
     } catch (err: any) {
-        console.log(err.message);
+        console.log(err.message, "my message");
     }
 };
 
