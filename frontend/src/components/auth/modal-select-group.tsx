@@ -44,7 +44,7 @@ interface PropsType {
 // Select group modal Component
 function SelectGroupModal({ open, setOpen, groups }: PropsType) {
     // Phone number
-    const phoneNumber = localStorage.getItem("phone-number");
+    const phoneNumber = localStorage.getItem("phone-number") || "";
 
     // Group states
     const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
@@ -69,7 +69,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                         ...parti,
                         ...(type === "name"
                             ? { name: e.target.value }
-                            : { phoneNumber: e.target.value }),
+                            : { phoneNumber: e.target.value.trim() }),
                     };
                 } else {
                     return parti;
@@ -86,7 +86,8 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
             participants.map((parti) => ({
                 name: parti.name,
                 phoneNumber: parti.phoneNumber,
-            }))
+            })),
+            phoneNumber
         );
     };
 
@@ -211,50 +212,35 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                     </Avatar>
 
                                     {/* Phone number */}
-                                    <div className="space-y-2 flex-1">
-                                        {/* <Label
-                                            htmlFor={index.toString() + "phone-number"}
-                                            className="text-xs text-white font-medium"
-                                        >
-                                            Phone Number
-                                        </Label> */}
-                                        <div className="relative">
-                                            <Input
-                                                id={index.toString() + "phone-number"}
-                                                required
-                                                readOnly
-                                                value={parti.phoneNumber}
-                                                onChange={(e) =>
-                                                    handleTextChange(e, "phone-number", parti.phoneNumber)
-                                                }
-                                                placeholder={`Enter phone number`}
-                                                className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
-                                            />
-                                            <Phone className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
-                                        </div>
+                                    <div className="relative flex-1">
+                                        <Input
+                                            id={index.toString() + "phone-number"}
+                                            required
+                                            // readOnly
+                                            value={parti.phoneNumber}
+                                            onChange={(e) =>
+                                                handleTextChange(e, "phone-number", parti.phoneNumber)
+                                            }
+                                            placeholder={`Enter phone number`}
+                                            className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                        />
+                                        <Phone className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
                                     </div>
 
                                     {/* Name */}
-                                    <div className="space-y-2 flex-1">
-                                        {/* <Label
-                                            htmlFor={index.toString() + "name"}
-                                            className="text-xs text-white font-medium"
-                                        >
-                                            Student Name
-                                        </Label> */}
-                                        <div className="relative">
-                                            <Input
-                                                id={index.toString() + "name"}
-                                                required
-                                                value={parti.name}
-                                                onChange={(e) =>
-                                                    handleTextChange(e, "name", parti.phoneNumber)
-                                                }
-                                                placeholder={`Enter name`}
-                                                className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
-                                            />
-                                            <UserRound className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
-                                        </div>
+                                    <div className="relative flex-1">
+                                        <Input
+                                            id={index.toString() + "name"}
+                                            required
+                                            autoComplete="off"
+                                            value={parti.name}
+                                            onChange={(e) =>
+                                                handleTextChange(e, "name", parti.phoneNumber)
+                                            }
+                                            placeholder={`Enter name`}
+                                            className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                        />
+                                        <UserRound className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
                                     </div>
                                 </div>
                             ))}

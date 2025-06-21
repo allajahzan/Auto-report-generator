@@ -5,7 +5,7 @@ import {
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import fs from "fs";
-import { getIO } from "../socket/connection";
+import { getIO } from "../socket/bot";
 import { removeSocket, setSocket } from "./socket-store";
 
 // Start baileys socket
@@ -192,8 +192,8 @@ export const startSocket = async (
                         RETRIES++;
                     } else {
                         // Retries limit reached
-                        console.log("🚪 Disconnected from BOT:", phoneNumber);
-                        emitStatus("error", "Failed reconnecting to report buddy 💥");
+                        console.log("⌛ Retries limit reached:", phoneNumber);
+                        emitStatus("error", "Failed reconnecting to report buddy 🤧");
                     }
                 }
             }
@@ -211,7 +211,7 @@ export const startSocket = async (
             }
         });
     } catch (err) {
-        console.error("💥 Error creating socket or during startup:", err);
-        emitStatus("error", "Failed connecting to report buddy 💥");
+        console.error("Error creating socket or during startup:", err);
+        emitStatus("error", "Failed connecting to report buddy 🤧");
     }
 };

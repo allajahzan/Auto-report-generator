@@ -84,10 +84,16 @@ export const pariticipantsList = (
 // Emit to submit selected group and participants details
 export const submitGroupAndParticipants = (
     groupId: string,
-    participants: { name: string; phoneNumber: string }[]
+    participants: { name: string; phoneNumber: string }[],
+    phoneNumber: string
 ) => {
     try {
-        socket.emit("submit-group-and-participants", groupId, participants);
+        socket.emit(
+            "submit-group-and-participants",
+            groupId,
+            participants,
+            phoneNumber
+        );
     } catch (err: unknown) {
         console.log(err);
     }

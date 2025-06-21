@@ -131,7 +131,7 @@ function GetStarted() {
     }, []);
 
     return (
-        <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-12 p-5">
+        <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-12 md:gap-6 lg:gap-0 p-5">
             {/* Left Side */}
             <div className="flex flex-col items-center md:items-start justify-center">
                 <motion.h1

@@ -6,7 +6,7 @@ import app from "./app";
 import { isEnvDefined } from "./utils/envChecker";
 import { MongodbConnection } from "@codeflare/common";
 import http from "http";
-import { connectSocketIO } from "./socket/connection";
+import { connectSocketIO } from "./socket/bot";
 
 // server
 const startServer = async () => {
@@ -16,7 +16,7 @@ const startServer = async () => {
 
         // connect to mongodb
         const db = new MongodbConnection(process.env.MONGO_DB_URL as string);
-        // await db.retryConnection();
+        await db.retryConnection();
 
         // Server
         const server = http.createServer(app);

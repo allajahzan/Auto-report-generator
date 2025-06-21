@@ -3,7 +3,7 @@ import { startSocket } from "../../bot/baileys";
 import { IQrService } from "../interface/IQrService";
 import fs from "fs";
 import path from "path";
-import { getActiveSockets, getIO } from "../../socket/connection";
+import { getActiveSockets, getIO } from "../../socket/bot";
 
 /** Implementation for QR Service */
 export class QRService implements IQrService {

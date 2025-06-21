@@ -1,5 +1,5 @@
 export const sonnerStyle: React.CSSProperties = {
-    backgroundColor: "#171717",
+    backgroundColor: "oklch(0.17 0 0)",
     color: "White",
     border: "none",
     fontSize: "14px",

@@ -1,12 +1,16 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import http from "http";
 import { startSocket } from "../bot/baileys";
 import { getSocket } from "../bot/socket-store";
+import { BatchRepository } from "../repository/implementation/batchRepository";
+import Batch from "../model/batchSchema";
 
 // io instance
 let io: Server;
-
 let activeUsers: { [userId: string]: string } = {};
+
+// Batch repository
+const batchRepository = new BatchRepository(Batch);
 
 /**
  * Connects socket.io to the server and sets up the chat, and video call sockets also notification events.
@@ -47,12 +51,19 @@ export const connectSocketIO = (server: http.Server) => {
                             io.to(socketId).emit("get-qrcode", qr);
                         }
                     },
-                    (status, message) => {
+                    async (status, message) => {
                         const socketId = activeUsers[phoneNumber];
                         console.log(socketId, "socketId to emit BOT status");
 
                         if (socketId) {
                             io.to(socketId).emit("bot-status", status, message);
+                        }
+
+                        // If connected create a batch
+                        if (status === "connected") {
+                            const batch = await batchRepository.create({
+                                coordinatorId: phoneNumber,
+                            });
                         }
                     }
                 );
@@ -60,6 +71,7 @@ export const connectSocketIO = (server: http.Server) => {
 
             // Get paricipants of a perticular group
             socket.on("get-participants", async (phoneNumber, groupId) => {
+                // Baileys socket
                 const sock = getSocket(phoneNumber);
 
                 if (!sock) {
@@ -68,12 +80,13 @@ export const connectSocketIO = (server: http.Server) => {
                         .emit(
                             "bot-status",
                             "error",
-                            "Connection lost with report buddy 💥"
+                            "Connection to report buddy is lost ⛓️‍💥"
                         );
                 }
 
                 const metadata = await sock.groupMetadata(groupId);
 
+                // Participants
                 const participants = await Promise.all(
                     metadata.participants
                         .filter((p) => !p.admin)
@@ -83,7 +96,7 @@ export const connectSocketIO = (server: http.Server) => {
                                 profilePic =
                                     (await sock.profilePictureUrl(p.id, "image")) || "";
                             } catch (err) {
-                                profilePic = ""; // default
+                                profilePic = "";
                             }
 
                             return {
@@ -98,14 +111,61 @@ export const connectSocketIO = (server: http.Server) => {
             });
 
             // Submit group and participants details
-            socket.on("submit-group-and-participants", (groupId, participants) => {
-                console.log("submit-group-and-participants", groupId, participants);
-            });
+            socket.on(
+                "submit-group-and-participants",
+                async (groupId, participants, phoneNumber) => {
+                    // Baileys socket
+                    const sock = getSocket(phoneNumber);
+
+                    if (!sock) {
+                        fn1(socket);
+                        return;
+                    }
+
+                    // Batch
+                    const batch = await batchRepository.findOne({
+                        coordinatorId: phoneNumber,
+                    });
+
+                    if (!batch) {
+                        fn1(socket);
+                        return;
+                    }
+
+                    const coordinator = participants.find(
+                        (parti: { name: string; phoneNumber: string }) =>
+                            parti.phoneNumber === phoneNumber
+                    );
+
+                    const updatedBatch = await batchRepository.update(
+                        { coordinatorId: phoneNumber },
+                        { $set: { groupId, coordinator, participants } },
+                        { new: true }
+                    );
+
+                    if (!updatedBatch) {
+                        fn1(socket);
+                        return;
+                    }
+
+                    io.to(socket.id).emit("submit-group-and-participants-result", true);
+                }
+            );
         });
     } catch (err: unknown) {
         console.log(err, "my errrroorrrrrrrrr");
     }
 };
+
+// Repeated function
+function fn1(socket: Socket) {
+    io.to(socket.id).emit("submit-group-and-participants-result", false);
+    io.to(socket.id).emit(
+        "bot-status",
+        "error",
+        "Connection to report buddy is lost ⛓️‍💥"
+    );
+}
 
 // Export the socket.io instance
 export const getIO = () => io;
