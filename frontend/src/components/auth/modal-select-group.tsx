@@ -26,6 +26,8 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import profile from "@/assets/images/groups.svg";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/auth-context";
 
 // Interface for group
 export interface IGroup {
@@ -44,7 +46,7 @@ interface PropsType {
 // Select group modal Component
 function SelectGroupModal({ open, setOpen, groups }: PropsType) {
     // Phone number
-    const phoneNumber = localStorage.getItem("phone-number") || "";
+    const phoneNumber = localStorage.getItem("phoneNumber") || "";
 
     // Group states
     const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
@@ -56,10 +58,15 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
     const [submiting, setSubmiting] = useState<boolean>(false);
 
+    const navigate = useNavigate();
+
+    // Auth context
+    const { setConnection, setGroupId } = useAuth();
+
     // Handle text change
     const handleTextChange = (
         e: ChangeEvent<HTMLInputElement>,
-        type: "name" | "phone-number",
+        type: "name" | "phoneNumber",
         phoneNumber: string
     ) => {
         setParticipants((prev) => {
@@ -112,6 +119,11 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                 setSubmiting(status);
                 if (status) {
                     setOpen(false);
+                    localStorage.setItem("connection", "1");
+                    setConnection(true);
+                    localStorage.setItem("groupId", selectedGroup?.id as string);
+                    setGroupId(selectedGroup?.id as string);
+                    navigate("/about");
                 }
             });
         }
@@ -214,12 +226,12 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                     {/* Phone number */}
                                     <div className="relative flex-1">
                                         <Input
-                                            id={index.toString() + "phone-number"}
+                                            id={index.toString() + "phoneNumber"}
                                             required
                                             // readOnly
                                             value={parti.phoneNumber}
                                             onChange={(e) =>
-                                                handleTextChange(e, "phone-number", parti.phoneNumber)
+                                                handleTextChange(e, "phoneNumber", parti.phoneNumber)
                                             }
                                             placeholder={`Enter phone number`}
                                             className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"

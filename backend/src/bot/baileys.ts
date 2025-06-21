@@ -5,13 +5,12 @@ import {
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import fs from "fs";
-import { getIO } from "../socket/bot";
+import { getActiveUsers, getIO } from "../socket/bot";
 import { removeSocket, setSocket } from "./socket-store";
 
 // Start baileys socket
 export const startSocket = async (
     phoneNumber: string,
-    socketId: string,
     emitQR: (qr: string) => void,
     emitStatus: (
         status: "connected" | "re-connect" | "disconnected" | "expired" | "error",
@@ -128,6 +127,7 @@ export const startSocket = async (
 
                     console.log("📃 WhatsApp Groups:");
 
+                    const socketId = getActiveUsers(phoneNumber);
                     io.to(socketId).emit("group-list", groupList);
                 } catch (err) {
                     console.error("❌ Failed to fetch groups:", err);
@@ -186,7 +186,7 @@ export const startSocket = async (
                         console.log(" 🔃 Reconnecting...");
 
                         setTimeout(() => {
-                            startSocket(phoneNumber, socketId, emitQR, emitStatus);
+                            startSocket(phoneNumber, emitQR, emitStatus);
                         }, 3000);
 
                         RETRIES++;

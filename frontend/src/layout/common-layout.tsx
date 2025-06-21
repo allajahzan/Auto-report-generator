@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
 import { Outlet } from "react-router-dom";
 
-// Auth layout Component
-function AuthLayout() {
+// Common layout Component
+function CommonLayout() {
     return (
         <div
             className={cn(
@@ -41,4 +41,4 @@ function AuthLayout() {
     );
 }
 
-export default AuthLayout;
+export default CommonLayout;

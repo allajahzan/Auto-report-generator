@@ -7,7 +7,7 @@ import Batch from "../model/batchSchema";
 
 // io instance
 let io: Server;
-let activeUsers: { [userId: string]: string } = {};
+let activeUsers: Record<string, string> = {};
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);
@@ -29,9 +29,7 @@ export const connectSocketIO = (server: http.Server) => {
 
             // Refresh socket
             socket.on("refresh-socket", (phoneNumber: string) => {
-                delete activeUsers[phoneNumber];
-                console.log(phoneNumber + " refreshed socket");
-                console.log(activeUsers);
+                activeUsers[phoneNumber] = socket.id;
             });
 
             // Get started
@@ -42,7 +40,6 @@ export const connectSocketIO = (server: http.Server) => {
                 // Start baileys socket
                 startSocket(
                     phoneNumber,
-                    socket.id,
                     (qr) => {
                         const socketId = activeUsers[phoneNumber];
                         console.log(socketId, "socketId to emit QR code");
@@ -169,4 +166,4 @@ function fn1(socket: Socket) {
 
 // Export the socket.io instance
 export const getIO = () => io;
-export const getActiveSockets = () => activeUsers;
+export const getActiveUsers = (phoneNumber: string) => activeUsers[phoneNumber];

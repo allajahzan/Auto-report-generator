@@ -3,7 +3,6 @@ import { startSocket } from "../../bot/baileys";
 import { IQrService } from "../interface/IQrService";
 import fs from "fs";
 import path from "path";
-import { getActiveSockets, getIO } from "../../socket/bot";
 
 /** Implementation for QR Service */
 export class QRService implements IQrService {
@@ -14,7 +13,6 @@ export class QRService implements IQrService {
      */
     async getQRcode(phoneNumber: string): Promise<void | Response> {
         try {
-            const io = getIO();
 
             
         } catch (err: unknown) {

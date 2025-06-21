@@ -1,39 +1,39 @@
 import student from "@/assets/images/student.png";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { Link, Loader2, Phone } from "lucide-react";
+import { Link, Loader2, Phone, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
-import {
-    botStatus,
-    groupList,
-    getQRcode,
-    getStarted,
-    refreshSocket,
-} from "@/socket/bot";
-import { toast } from "sonner";
-import { sonnerStyle } from "@/lib/sonner-style";
+import { botStatus, groupList, getQRcode, getStarted } from "@/socket/bot";
 import SelectGroupModal, { type IGroup } from "./modal-select-group";
-import { useMediaQuery } from "react-responsive";
+import { useNotification } from "@/context/notification-context";
+import { useAuth } from "@/context/auth-context";
 
-// GetStarted Component
+// Get started Component
 function GetStarted() {
     // Modal state
     const [open, setOpen] = useState<boolean>(false);
     const [groups, setGroups] = useState<IGroup[] | []>([]);
 
-    // Phone size
-    const isMobile = useMediaQuery({ query: "(max-width: 620px)" });
+    // Auth context
+    const {
+        phoneNumber: phn,
+        setPhoneNumber,
+        setConnection,
+        setGroupId,
+    } = useAuth();
 
     // Phone number
-    const pn = localStorage.getItem("phone-number") || "";
-    const phoneNumber = useRef<string>(pn);
+    const phoneNumber = useRef<string>(phn);
     const error = useRef<HTMLParagraphElement>(null);
 
     // QR code
-    const [qr, setQr] = useState<string>("");
+    const [qr, setQr] = useState<string>(localStorage.getItem("qr") || "");
     const [loading, setLoading] = useState<boolean>(false);
+
+    // Notificatino context
+    const { setNotification } = useNotification();
 
     // Handle get started
     const handleGetStarted = async () => {
@@ -54,69 +54,51 @@ function GetStarted() {
         getStarted(phoneNumber.current);
 
         // Store phone number
-        localStorage.setItem("phone-number", phoneNumber.current);
+        localStorage.setItem("phoneNumber", phoneNumber.current);
+        setPhoneNumber(phoneNumber.current);
 
         if (error.current) error.current.innerHTML = "";
 
         setLoading(true);
     };
 
-    // Emit an event when page reload to refresh socket
-    useEffect(() => {
-        const handleLoad = () => {
-            const navType = performance.getEntriesByType(
-                "navigation"
-            )[0] as PerformanceNavigationTiming;
-
-            if (navType?.type === "reload") {
-                if (phoneNumber.current) {
-                    refreshSocket(phoneNumber.current);
-                }
-            }
-        };
-
-        window.addEventListener("load", handleLoad);
-
-        return () => {
-            window.removeEventListener("load", handleLoad);
-        };
-    }, []);
-
     // Listen for qr code
     useEffect(() => {
         getQRcode((qrCode: string) => {
+            // Store qr code
+            localStorage.setItem("qr", qrCode);
             setQr(qrCode);
-            toast("Scan this QR code, connect to report buddy 🔗", {
-                position: "top-right",
-                style: { ...sonnerStyle, ...(!isMobile && { width: "max-content" }) },
-            });
 
             setLoading(false);
+
+            setNotification("Scan this QR code, connect to report buddy 🔗");
         });
     }, []);
 
     // Listen for BOT status
     useEffect(() => {
         botStatus((status, message) => {
-            if (status === "re-connect") {
-                setQr("");
-                setLoading(false);
-            } else if (
+            if (
                 status === "expired" ||
                 status === "disconnected" ||
                 status === "error"
             ) {
+                // Reset states
+                localStorage.removeItem("qr");
                 setQr("");
+
                 setLoading(false);
 
-                // Remove phone number
-                localStorage.removeItem("phone-number");
+                // Remove auth states
+                localStorage.removeItem("phoneNumber");
+                setPhoneNumber("");
+                localStorage.removeItem("connection");
+                setConnection(false);
+                localStorage.removeItem("groupId");
+                setGroupId("");
             }
 
-            toast(message, {
-                position: "top-right",
-                style: { ...sonnerStyle, ...(!isMobile && { width: "max-content" }) },
-            });
+            setNotification(message);
         });
     }, []);
 
@@ -124,7 +106,11 @@ function GetStarted() {
     useEffect(() => {
         groupList((grplist) => {
             setGroups(grplist);
+
+            // Open modal
             setOpen(true);
+
+            localStorage.removeItem("qr");
             setQr("");
             setLoading(false);
         });
@@ -132,6 +118,18 @@ function GetStarted() {
 
     return (
         <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-12 md:gap-6 lg:gap-0 p-5">
+            {/* Refresh Button */}
+            <div
+                onClick={() => {
+                    localStorage.removeItem("phoneNumber");
+                    setPhoneNumber("");
+                    localStorage.removeItem("qr");
+                    setQr("");
+                }}
+                className="absolute left-0 top-0 p-4 cursor-pointer active:animate-spin"
+            >
+                <RefreshCw className="w-5 h-5 text-white" />
+            </div>
             {/* Left Side */}
             <div className="flex flex-col items-center md:items-start justify-center">
                 <motion.h1
@@ -230,7 +228,7 @@ function GetStarted() {
                         <p className="font-semibold text-base text-white">
                             Scan this QR code
                         </p>
-                        <div className="p-4 bg-white rounded-lg">
+                        <div className="p-3 bg-white rounded-lg">
                             <QRCode value={qr} />
                         </div>
                         <p className="w-72 flex items-center gap-2 relative font-medium text-white text-sm italic">
