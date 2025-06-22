@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { qrRoute } from "./qrRoute";
+import { batchRoute } from "./batchRoute";
 
 const router = Router();
 
-router.use('/qr-code', qrRoute);
+// Batch route
+router.use('/batch', batchRoute);
 
 export default router;

@@ -26,6 +26,9 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import profile from "@/assets/images/groups.svg";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/auth-context";
+import { useNotification } from "@/context/notification-context";
 
 // Interface for group
 export interface IGroup {
@@ -44,35 +47,43 @@ interface PropsType {
 // Select group modal Component
 function SelectGroupModal({ open, setOpen, groups }: PropsType) {
     // Phone number
-    const phoneNumber = localStorage.getItem("phone-number") || "";
+    const phoneNumber = localStorage.getItem("phoneNumber") || "";
 
     // Group states
     const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
 
     // Participants
     const [participants, setParticipants] = useState<
-        { name: string; phoneNumber: string; profilePic: string }[]
+        { id: string; name: string; phoneNumber: string; profilePic: string }[]
     >([]);
 
     const [submiting, setSubmiting] = useState<boolean>(false);
 
+    const navigate = useNavigate();
+
+    // Auth context
+    const { setConnection, setGroupId } = useAuth();
+
+    // Notifiation context
+    const { setNotification } = useNotification();
+
     // Handle text change
     const handleTextChange = (
         e: ChangeEvent<HTMLInputElement>,
-        type: "name" | "phone-number",
+        type: "name" | "phoneNumber",
         phoneNumber: string
     ) => {
         setParticipants((prev) => {
-            return prev.map((parti) => {
-                if (parti.phoneNumber === phoneNumber) {
+            return prev.map((p) => {
+                if (p.phoneNumber === phoneNumber) {
                     return {
-                        ...parti,
+                        ...p,
                         ...(type === "name"
                             ? { name: e.target.value }
                             : { phoneNumber: e.target.value.trim() }),
                     };
                 } else {
-                    return parti;
+                    return p;
                 }
             });
         });
@@ -83,9 +94,10 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
         setSubmiting(true);
         submitGroupAndParticipants(
             selectedGroup?.id as string,
-            participants.map((parti) => ({
-                name: parti.name,
-                phoneNumber: parti.phoneNumber,
+            participants.map((p) => ({
+                id: p.id,
+                name: p.name,
+                phoneNumber: p.phoneNumber,
             })),
             phoneNumber
         );
@@ -111,7 +123,19 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
             resultSubmitGroupAndParticipants((status: boolean) => {
                 setSubmiting(status);
                 if (status) {
+                    // Auth states
                     setOpen(false);
+                    localStorage.setItem("connection", "1");
+                    setConnection(true);
+                    localStorage.setItem("groupId", selectedGroup?.id as string);
+                    setGroupId(selectedGroup?.id as string);
+
+                    setNotification({
+                        id: Date.now().toString(),
+                        message: "You have successfully selected the group 🎉",
+                    });
+
+                    navigate(`/${phoneNumber}/${selectedGroup?.id}`);
                 }
             });
         }
@@ -190,7 +214,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                             }}
                             className="flex items-center gap-2 text-white cursor-pointer"
                         >
-                            <div className="p-2 rounded-full hover:bg-zinc-800">
+                            <div className="p-2 rounded-full text-zinc-600 hover:text-zinc-100">
                                 <ChevronLeft className="w-4 h-4" />
                             </div>
                             <p className="font-medium text-sm">{selectedGroup.name}</p>
@@ -198,14 +222,11 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
                         {/* Lists */}
                         <div className="flex flex-col gap-2 text-white font-medium overflow-auto no-scrollbar">
-                            {participants.map((parti, index) => (
-                                <div key={index} className="flex items-center gap-3">
+                            {participants.map((p, index) => (
+                                <div key={index} className="flex items-center gap-2">
                                     {/* Profile pic */}
                                     <Avatar className="bg-background w-10 h-10 border-2 border-zinc-800 shadow-md">
-                                        <AvatarImage
-                                            src={parti.profilePic}
-                                            className="object-cover"
-                                        />
+                                        <AvatarImage src={p.profilePic} className="object-cover" />
                                         <AvatarFallback className="bg-zinc-300">
                                             <img className="w-full" src={profile} alt="" />
                                         </AvatarFallback>
@@ -214,12 +235,12 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                     {/* Phone number */}
                                     <div className="relative flex-1">
                                         <Input
-                                            id={index.toString() + "phone-number"}
+                                            id={index.toString() + "phoneNumber"}
                                             required
                                             // readOnly
-                                            value={parti.phoneNumber}
+                                            value={p.phoneNumber}
                                             onChange={(e) =>
-                                                handleTextChange(e, "phone-number", parti.phoneNumber)
+                                                handleTextChange(e, "phoneNumber", p.phoneNumber)
                                             }
                                             placeholder={`Enter phone number`}
                                             className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
@@ -233,11 +254,11 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                             id={index.toString() + "name"}
                                             required
                                             autoComplete="off"
-                                            value={parti.name}
+                                            value={p.name}
                                             onChange={(e) =>
-                                                handleTextChange(e, "name", parti.phoneNumber)
+                                                handleTextChange(e, "name", p.phoneNumber)
                                             }
-                                            placeholder={`Enter name`}
+                                            placeholder={`Name`}
                                             className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
                                         />
                                         <UserRound className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />

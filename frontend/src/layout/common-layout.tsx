@@ -1,18 +1,18 @@
 import { cn } from "@/lib/utils";
 import { Outlet } from "react-router-dom";
 
-// Auth layout Component
-function AuthLayout() {
+// Common layout Component
+function CommonLayout() {
     return (
         <div
             className={cn(
-                "h-screen flex flex-col bg-my-bg-light",
+                "h-screen flex flex-col bg-my-bg",
                 "[background-size:20px_20px]",
                 "[background-image:radial-gradient(rgba(255,255,255,0.15)_1px,transparent_1px)]"
             )}
         >
             {/* Main Content */}
-            <main className="flex-1 flex items-center justify-center overflow-auto">
+            <main className="flex-1 flex items-center justify-center overflow-auto no-scrollbar">
                 <Outlet />
             </main>
 
@@ -41,4 +41,4 @@ function AuthLayout() {
     );
 }
 
-export default AuthLayout;
+export default CommonLayout;

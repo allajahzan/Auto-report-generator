@@ -13,7 +13,7 @@ interface PropsType {
     className: string;
 }
 
-// UsersList Component
+// Gorup list Component
 function GroupList({
     // index,
     action,

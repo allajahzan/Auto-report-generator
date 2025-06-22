@@ -69,7 +69,12 @@ export const getParticipants = (phoneNumber: string, groupId: string) => {
 // Listen for participants
 export const pariticipantsList = (
     callback: (
-        participants: { name: string; phoneNumber: string; profilePic: string }[]
+        participants: {
+            id: string;
+            name: string;
+            phoneNumber: string;
+            profilePic: string;
+        }[]
     ) => void
 ) => {
     try {
@@ -84,7 +89,7 @@ export const pariticipantsList = (
 // Emit to submit selected group and participants details
 export const submitGroupAndParticipants = (
     groupId: string,
-    participants: { name: string; phoneNumber: string }[],
+    participants: { id: string; name: string; phoneNumber: string }[],
     phoneNumber: string
 ) => {
     try {
