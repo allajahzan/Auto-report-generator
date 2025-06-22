@@ -42,13 +42,12 @@ const batchSchema = new Schema<IBatchSchema>(
                     phoneNumber: {
                         type: String,
                     },
-                    isMarked: {
-                        type: Boolean,
-                        default: false,
-                    },
                     isCompleted: {
                         type: Boolean,
                         default: false,
+                    },
+                    timestamp: {
+                        type: Date,
                     },
                 },
             ],

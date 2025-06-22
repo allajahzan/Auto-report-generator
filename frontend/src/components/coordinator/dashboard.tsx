@@ -44,7 +44,6 @@ function DashboardCoordinator() {
                 return resp.data?.data;
             }
         },
-        refetchOnWindowFocus: false,
         retry: false,
     });
 
@@ -115,9 +114,9 @@ function DashboardCoordinator() {
                     <div className=" relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
                         {/* Batch name */}
                         <div className="flex justify-between">
-                            <h1 className="text-2xl font-extrabold text-white tracking-wide">
-                                <span className="text-white text-4xl">
-                                    {data.batchName || '"Batch Name"'}
+                            <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
+                                <span className="text-white text-2xl sm:text-3xl">
+                                    {data.batchName || "Batch Name"}
                                 </span>{" "}
                                 Communication batch
                             </h1>
@@ -168,12 +167,9 @@ function DashboardCoordinator() {
                         {/* Name and details */}
                         <div className="flex flex-col gap-5 p-3 bg-my-bg-dark rounded-lg shadow">
                             <NameCard
-                                data={{
-                                    id: "asd",
-                                    name: "",
-                                    profilePic: "",
-                                    phoneNumber: "7034661353",
-                                }}
+                                data={data.participants.find(
+                                    (p: any) => p.phoneNumber === data.coordinatorId
+                                )}
                             />
                         </div>
                     </div>
@@ -197,10 +193,12 @@ function DashboardCoordinator() {
                         </div>
 
                         {/* Name and details */}
-
                         <div className="flex flex-col gap-2">
-                            {data.participants.map((p: any) => (
-                                <div className="p-3 bg-my-bg-dark rounded-lg shadow">
+                            {data.participants.map((p: any, index: number) => (
+                                <div
+                                    key={index}
+                                    className="p-3 bg-my-bg-dark rounded-lg shadow"
+                                >
                                     <NameCard key={p.id} data={p} />
                                 </div>
                             ))}
