@@ -5,7 +5,7 @@ import { Link, Loader2, Phone, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
-import { botStatus, groupList, getQRcode, getStarted } from "@/socket/bot";
+import { botStatus, groupList, getQRcode, getStarted } from "@/socket/io";
 import SelectGroupModal, { type IGroup } from "./modal-select-group";
 import { useNotification } from "@/context/notification-context";
 import { useAuth } from "@/context/auth-context";

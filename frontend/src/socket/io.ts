@@ -1,5 +1,8 @@
 import type { IGroup } from "@/components/auth/modal-select-group";
-import { socket } from "./connection";
+import { BASE_URL } from '@/constants/base-url';
+import io from 'socket.io-client'
+
+const socket = io(BASE_URL);
 
 // Emit to refresh socket
 export const refreshSocket = (phoneNumber: string) => {

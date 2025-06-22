@@ -6,7 +6,7 @@ import app from "./app";
 import { isEnvDefined } from "./utils/envChecker";
 import { MongodbConnection } from "@codeflare/common";
 import http from "http";
-import { connectSocketIO } from "./socket/bot";
+import { connectSocketIO } from "./socket/io";
 import { startSocketOnServerStart } from "./bot/baileys";
 
 // server

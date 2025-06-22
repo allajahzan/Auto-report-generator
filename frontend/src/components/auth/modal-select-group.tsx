@@ -21,7 +21,7 @@ import {
     pariticipantsList,
     resultSubmitGroupAndParticipants,
     submitGroupAndParticipants,
-} from "@/socket/bot";
+} from "@/socket/io";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import profile from "@/assets/images/groups.svg";
@@ -163,7 +163,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                         <span>
                             {!selectedGroup
                                 ? "Select a group you wanna get tracked by report buddy"
-                                : "Fill only students name of corresponding phone number"}
+                                : "Fill participants name of corresponding phone number"}
                         </span>
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground font-medium text-xs text-start">

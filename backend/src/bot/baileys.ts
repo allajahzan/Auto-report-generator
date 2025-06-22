@@ -6,8 +6,14 @@ import makeWASocket, {
 import P from "pino";
 import { Boom } from "@hapi/boom";
 import fs from "fs";
-import { getActiveUsers, getIO } from "../socket/bot";
+import { getActiveUsers, getIO } from "../socket/io";
 import { removeSocket, setSocket } from "./socket-store";
+import { BatchRepository } from "../repository/implementation/batchRepository";
+import Batch from "../model/batchSchema";
+import schedule from "node-schedule";
+
+// Batch repository
+const batchRepository = new BatchRepository(Batch);
 
 // Start baileys socket
 export const startSocket = async (
@@ -117,7 +123,7 @@ export const startSocket = async (
                                     profilePic =
                                         (await sock.profilePictureUrl(group.id, "image")) || "";
                                 } catch (err) {
-                                    profilePic = ""; // default
+                                    profilePic = "";
                                 }
 
                                 return {
@@ -157,7 +163,7 @@ export const startSocket = async (
                 if (reason === DisconnectReason.loggedOut) {
                     const connectedPhone = connectedId?.split(":")[0].slice(2);
 
-                    console.log("🚪 Logged out from BOT:", phoneNumber);
+                    console.log("🚪Logged out from BOT:", phoneNumber);
 
                     setTimeout(() => {
                         try {
@@ -196,25 +202,174 @@ export const startSocket = async (
 
         // New messages
         sock.ev.on("messages.upsert", async ({ messages, type }) => {
-            if (type !== "notify" || !messages?.length) return;
+            // Between 15-22PM (3-10PM)
+            const time = new Date().getHours();
+            if (time < 15 || time > 22) return;
 
-            const msg = messages[0];
-            const isFromMe = msg.key.fromMe;
-
-            const actualSender = isFromMe
-                ? sock.user?.id // your bot's number
-                : msg.key.remoteJid;
-
-            const phoneNo = actualSender?.split(":")[0].slice(2);
-            const content =
-                msg.message?.conversation || msg.message?.extendedTextMessage?.text;
-
-            console.log("📩 Message:", {
-                phoneNo,
-                fromMe: isFromMe,
-                content,
+            // Batch
+            const batch = await batchRepository.findOne({
+                coordinatorId: phoneNumber,
             });
+
+            if (!batch || !messages || !messages.length) return;
+
+            const groupIdFromDB = batch.groupId;
+
+            for (const msg of messages) {
+                // Check if message is from group
+                const isMessageFromGroup =
+                    type === "notify" && msg.key.remoteJid?.endsWith("@g.us");
+
+                // Check with group ID
+                if (isMessageFromGroup && groupIdFromDB === msg.key.remoteJid) {
+                    const textMessage =
+                        msg.message?.conversation ||
+                        msg.message?.extendedTextMessage?.text ||
+                        "";
+
+                    console.log(textMessage ? textMessage : undefined);
+
+                    // Check if message is text and "Audio task"
+                    const isTextIs_audiotask = /\baudio\s*task\b/i.test(
+                        textMessage.trim()
+                    );
+
+                    console.log("'audio task':", isTextIs_audiotask);
+
+                    const msgSender = msg.key.participant;
+                    const sender = batch.participants.find((p) => p.id === msgSender);
+
+                    console.log("sender :", sender?.name);
+
+                    // If message is text and "Audio task"
+                    if (isTextIs_audiotask && sender) {
+                        const now = new Date();
+
+                        // Check if report already exists
+                        const existingReportIndex = batch.audioTaskReport.findIndex(
+                            (r) => r.phoneNumber === sender.phoneNumber
+                        );
+
+                        // Not exist, then add new report for sender
+                        if (existingReportIndex === -1) {
+                            await batchRepository.update(
+                                { coordinatorId: phoneNumber },
+                                {
+                                    $push: {
+                                        audioTaskReport: {
+                                            name: sender.name || "Unknown",
+                                            phoneNumber: sender.phoneNumber,
+                                            isCompleted: false,
+                                            timestamp: now,
+                                        },
+                                    },
+                                }
+                            );
+                            console.log("Marked attendence for:", sender.phoneNumber);
+                        }
+                    }
+
+                    // If message is audio
+                    if (msg.message?.audioMessage && sender) {
+                        const existing = batch.audioTaskReport.find(
+                            (r) => r.phoneNumber === sender.phoneNumber
+                        );
+
+                        if (existing && existing.isCompleted === false) {
+                            // Time difference
+                            const timeDiff =
+                                new Date().getTime() - new Date(existing.timestamp).getTime();
+
+                            // Within 2 minutes
+                            if (timeDiff <= 2 * 60 * 1000 && !existing.isCompleted) {
+                                await batchRepository.update(
+                                    {
+                                        coordinatorId: phoneNumber,
+                                        "audioTaskReport.phoneNumber": sender.phoneNumber,
+                                    },
+                                    { $set: { "audioTaskReport.$.isCompleted": true } }
+                                );
+                                console.log("Completed attendence for:", sender.phoneNumber);
+                            } else {
+                                // Delete the report of sender if time is over
+                                console.log("Time is over for :", sender.phoneNumber);
+                                await batchRepository.update(
+                                    {
+                                        coordinatorId: phoneNumber,
+                                        "audioTaskReport.phoneNumber": sender.phoneNumber,
+                                    },
+                                    {
+                                        $pull: {
+                                            audioTaskReport: { phoneNumber: sender.phoneNumber },
+                                        },
+                                    }
+                                );
+
+                                // Notify the sender
+                                await sock.sendMessage(sender.id, {
+                                    text: `Dear ${sender.name || "Participant"
+                                        },\nYour audio task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Coordinator`,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
         });
+
+        // Scheduled task to send audio task report at 22:05PM (10:05PM)
+        schedule.scheduleJob(
+            `audio-task-report${phoneNumber}`,
+            "5 22 * * *",
+            async () => {
+                const batch = await batchRepository.findOne({
+                    coordinatorId: phoneNumber,
+                });
+
+                if (!batch) return;
+
+                const participants = batch.participants;
+                const audioTaskReport = batch.audioTaskReport;
+
+                let audio_task_report: Record<string, boolean> = {};
+
+                for (const p of participants) {
+                    // if(p.role === "student")
+                    const report = audioTaskReport.find(
+                        (r) => r.phoneNumber === p.phoneNumber
+                    );
+
+                    if (report && report.isCompleted) {
+                        audio_task_report[report.name] = true;
+                    } else {
+                        audio_task_report[p.name || p.phoneNumber] = false;
+                    }
+                }
+
+                const formattedDate = new Date().toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                });
+
+                let text = `Audio task report\n🎓BATCH : ${batch.batchName
+                    }\n📅Date: ${formattedDate}\n👨‍🏫Trainer : ${false || "Divya"
+                    }\n🎤Coordinators: ${"A & B"}\n🗺Topic: An audio to your future self\n\nSubmitted:`;
+
+                for (const p in audio_task_report) {
+                    if (audio_task_report[p]) text += `\n${p}:✅`;
+                }
+
+                text += "\n\nNot submitted:";
+
+                for (const p in audio_task_report) {
+                    if (!audio_task_report[p]) text += `\n${p}:❌`;
+                }
+
+                // Send audio task report in group
+                await sock.sendMessage(batch.groupId, { text });
+            }
+        );
     } catch (err) {
         console.error("Error creating socket or during startup:", err);
         emitStatus("error", "Failed connecting to report buddy 🤧");
@@ -234,6 +389,17 @@ export const startSocketOnServerStart = () => {
                 (status, message) => { }
             );
         }
+
+        // Refresh every 2 minutes
+        setInterval(() => {
+            for (const phoneNumber of existingUsers) {
+                startSocket(
+                    phoneNumber,
+                    (qr) => { },
+                    (status, message) => { }
+                );
+            }
+        }, 60 * 1000 * 2);
     } catch (err: unknown) {
         throw err;
     }

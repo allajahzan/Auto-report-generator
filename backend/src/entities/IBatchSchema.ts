@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 
-// Interface for Batch Schema 
+// Interface for Batch Schema
 export interface IBatchSchema extends Document {
     coordinatorId: string;
     groupId: string;
@@ -9,8 +9,8 @@ export interface IBatchSchema extends Document {
     audioTaskReport: {
         name: string;
         phoneNumber: string;
-        isMarked: boolean;
         isCompleted: boolean;
+        timestamp: Date;
     }[];
     createdAt: Date;
 }

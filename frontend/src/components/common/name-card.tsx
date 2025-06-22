@@ -29,7 +29,7 @@ function NameCard({ data }: PropsType) {
             <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
                 <div className="flex items-center gap-2">
                     <p className="text-base text-white font-semibold truncate">
-                        {data.name || "Unknown"}
+                        {data.name || "Participant"}
                     </p>
                 </div>
                 <p className="text-xs text-white font-medium tracking-wide flex items-center gap-1 w-full truncate">
