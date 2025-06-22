@@ -7,6 +7,7 @@ import { isEnvDefined } from "./utils/envChecker";
 import { MongodbConnection } from "@codeflare/common";
 import http from "http";
 import { connectSocketIO } from "./socket/bot";
+import { startSocketOnServerStart } from "./bot/baileys";
 
 // server
 const startServer = async () => {
@@ -23,6 +24,9 @@ const startServer = async () => {
 
         // Connect socket-io
         connectSocketIO(server);
+
+        // Start baileys sockets
+        startSocketOnServerStart();
 
         //listen to port
         server.listen(process.env.PORT, () =>

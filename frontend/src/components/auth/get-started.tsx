@@ -21,6 +21,7 @@ function GetStarted() {
         phoneNumber: phn,
         setPhoneNumber,
         setConnection,
+        groupId,
         setGroupId,
     } = useAuth();
 
@@ -71,14 +72,22 @@ function GetStarted() {
 
             setLoading(false);
 
-            setNotification("Scan this QR code, connect to report buddy 🔗");
+            setNotification({
+                id: Date.now().toString(),
+                message: "Scan this QR code, connect to report buddy 🔗",
+            });
         });
     }, []);
 
     // Listen for BOT status
     useEffect(() => {
         botStatus((status, message) => {
-            if (
+            if (status === "connected" && groupId) {
+                localStorage.setItem("connection", "1");
+                setConnection(true);
+
+                setLoading(false);
+            } else if (
                 status === "expired" ||
                 status === "disconnected" ||
                 status === "error"
@@ -98,26 +107,31 @@ function GetStarted() {
                 setGroupId("");
             }
 
-            setNotification(message);
+            setNotification({
+                id: Date.now().toString(),
+                message,
+            });
         });
     }, []);
 
     // Listen for group list
     useEffect(() => {
-        groupList((grplist) => {
-            setGroups(grplist);
+        if (!groupId) {
+            groupList((grplist) => {
+                setGroups(grplist);
 
-            // Open modal
-            setOpen(true);
+                // Open modal
+                setOpen(true);
 
-            localStorage.removeItem("qr");
-            setQr("");
-            setLoading(false);
-        });
-    }, []);
+                localStorage.removeItem("qr");
+                setQr("");
+                setLoading(false);
+            });
+        }
+    }, [groupId]);
 
     return (
-        <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-12 md:gap-6 lg:gap-0 p-5">
+        <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-0 p-5">
             {/* Refresh Button */}
             <div
                 onClick={() => {
@@ -152,7 +166,7 @@ function GetStarted() {
                     Buddy you never had.
                 </motion.p>
 
-                <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full max-w-md">
+                <div className="flex flex-col sm:flex-row gap-3 mt-3 sm:mt-5 w-full max-w-md">
                     <div className="relative flex flex-col gap-2">
                         <motion.div
                             initial={{ opacity: 0, y: 30 }}
@@ -208,13 +222,13 @@ function GetStarted() {
             </div>
 
             {/* Right Side */}
-            <div className="relative flex items-center justify-center md:justify-end h-[300px] w-full md:w-1/2">
+            <div className="relative flex items-center justify-center md:justify-end h-[260px] sm:h-[300px] w-full md:w-1/2">
                 {!qr ? (
                     <motion.img
                         initial={{ opacity: 0, y: -30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
-                        className="w-40 sm:w-52 md:w-64 transform scale-x-[-1]"
+                        className="w-48 sm:w-52 md:w-64 transform scale-x-[-1]"
                         src={student}
                         alt="Student illustration"
                     />
@@ -223,7 +237,7 @@ function GetStarted() {
                         initial={{ opacity: 0, y: -30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
-                        className="flex flex-col items-center justify-end gap-5 self-center scale-80 md:scale-90"
+                        className="flex flex-col items-center justify-end gap-5 self-center relative top-3 sm:top-0 scale-75 md:scale-[80%] lg:scale-90"
                     >
                         <p className="font-semibold text-base text-white">
                             Scan this QR code

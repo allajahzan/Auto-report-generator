@@ -13,7 +13,7 @@ function CoordinatorRoute() {
         <Routes>
             <Route element={<CommonLayout />}>
                 <Route path="" element={connection ? <Navigate to={`/${phoneNumber}/${groupId}`} /> : <GetStartedPage />} />
-                <Route path={`/${phoneNumber}/${groupId}`} element={connection ? <DashbaordCoordinatorPage /> : <Navigate to={"/"} />} />
+                <Route path={`/:phoneNumber/:groupId`} element={connection ? <DashbaordCoordinatorPage /> : <Navigate to={"/"} />} />
             </Route>
         </Routes>
     );

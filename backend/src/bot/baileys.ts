@@ -1,8 +1,9 @@
-import {
-    makeWASocket,
+import makeWASocket, {
     useMultiFileAuthState,
+    fetchLatestBaileysVersion,
     DisconnectReason,
 } from "@whiskeysockets/baileys";
+import P from "pino";
 import { Boom } from "@hapi/boom";
 import fs from "fs";
 import { getActiveUsers, getIO } from "../socket/bot";
@@ -18,16 +19,17 @@ export const startSocket = async (
     ) => void
 ) => {
     try {
-        // if (activeUsers[phoneNumber]) {
-        //     console.log("❗ Socket already running for", phoneNumber);
-        //     emitStatus("re-connect", "Reconnected to report buddy 👌");
-        //     return;
-        // }
-
         // auth_info
         const authPath = `src/auth_info/${phoneNumber}`;
         const { state, saveCreds } = await useMultiFileAuthState(authPath);
-        const sock = makeWASocket({ auth: state });
+
+        const sock = makeWASocket({
+            auth: state,
+            version: (await fetchLatestBaileysVersion()).version,
+            logger: P({ level: "silent" }),
+            syncFullHistory: false,
+            shouldSyncHistoryMessage: () => false,
+        });
 
         // Save auth_info
         sock.ev.on("creds.update", async () => {
@@ -72,6 +74,7 @@ export const startSocket = async (
             // Open connection
             if (connection === "open") {
                 const connectedPhone = connectedId?.split(":")[0].slice(2);
+                console.log(connectedId);
 
                 if (connectedPhone !== phoneNumber) {
                     emitStatus(
@@ -125,12 +128,12 @@ export const startSocket = async (
                             })
                     );
 
-                    console.log("📃 WhatsApp Groups:");
+                    console.log("📃 Fetched WhatsApp groups for:", phoneNumber);
 
                     const socketId = getActiveUsers(phoneNumber);
                     io.to(socketId).emit("group-list", groupList);
                 } catch (err) {
-                    console.error("❌ Failed to fetch groups:", err);
+                    console.error("❌ Failed to fetch WhatsApp groups for:", phoneNumber);
                 }
             }
 
@@ -148,14 +151,6 @@ export const startSocket = async (
                 // Closed
                 if (reason === DisconnectReason.connectionClosed) {
                     console.log("Connection closed");
-                }
-
-                // Forbidden
-                if (reason === DisconnectReason.forbidden) {
-                    emitStatus(
-                        "error",
-                        "Scanned WhatsApp doesn't match provided phone number 😒"
-                    );
                 }
 
                 // Logged-out
@@ -183,7 +178,7 @@ export const startSocket = async (
                 // Restart
                 if (reason === DisconnectReason.restartRequired) {
                     if (ATTEMPT > RETRIES) {
-                        console.log(" 🔃 Reconnecting...");
+                        console.log(" 🔃 Reconnecting...:", phoneNumber);
 
                         setTimeout(() => {
                             startSocket(phoneNumber, emitQR, emitStatus);
@@ -201,17 +196,45 @@ export const startSocket = async (
 
         // New messages
         sock.ev.on("messages.upsert", async ({ messages, type }) => {
-            if (type === "notify" && messages[0].message) {
-                const msg = messages[0];
-                const senderId = msg.key.remoteJid;
-                const isMe = msg.key.fromMe;
-                const phoneNo = senderId?.split("@")[0].slice(2);
+            if (type !== "notify" || !messages?.length) return;
 
-                console.log("Message:", msg.message);
-            }
+            const msg = messages[0];
+            const isFromMe = msg.key.fromMe;
+
+            const actualSender = isFromMe
+                ? sock.user?.id // your bot's number
+                : msg.key.remoteJid;
+
+            const phoneNo = actualSender?.split(":")[0].slice(2);
+            const content =
+                msg.message?.conversation || msg.message?.extendedTextMessage?.text;
+
+            console.log("📩 Message:", {
+                phoneNo,
+                fromMe: isFromMe,
+                content,
+            });
         });
     } catch (err) {
         console.error("Error creating socket or during startup:", err);
         emitStatus("error", "Failed connecting to report buddy 🤧");
+    }
+};
+
+// Start socket on server start
+export const startSocketOnServerStart = () => {
+    try {
+        const authDir = "src/auth_info";
+        const existingUsers = fs.readdirSync(authDir);
+
+        for (const phoneNumber of existingUsers) {
+            startSocket(
+                phoneNumber,
+                (qr) => { },
+                (status, message) => { }
+            );
+        }
+    } catch (err: unknown) {
+        throw err;
     }
 };
