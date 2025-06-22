@@ -69,7 +69,7 @@ function DashboardCoordinator() {
     }
 
     return (
-        <div className="h-full w-full mx-auto">
+        <div className="h-full w-full overflow-hidden">
             {isLoading && (
                 <div className="h-full flex items-center justify-center p-5">
                     <Loader2 className="w-5 h-5 animate-spin text-white" />
@@ -110,7 +110,7 @@ function DashboardCoordinator() {
             )}
 
             {data && (
-                <div className="w-full max-w-6xl mx-auto h-full flex flex-col gap-5 p-10">
+                <div className="w-full max-w-6xl mx-auto h-full flex flex-col gap-5 p-5 sm:p-10 overflow-auto no-scrollbar">
                     {/* Header */}
                     <div className=" relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
                         {/* Batch name */}

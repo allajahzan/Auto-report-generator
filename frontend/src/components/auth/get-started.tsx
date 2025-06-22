@@ -131,7 +131,7 @@ function GetStarted() {
     }, [groupId]);
 
     return (
-        <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-0 p-5">
+        <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-0 p-5 overflow-auto no-scrollbar">
             {/* Refresh Button */}
             <div
                 onClick={() => {

@@ -1,8 +1,12 @@
+import { useAuth } from "@/context/auth-context";
 import { cn } from "@/lib/utils";
 import { Outlet } from "react-router-dom";
 
 // Common layout Component
 function CommonLayout() {
+    // Auth context
+    const { connection } = useAuth();
+
     return (
         <div
             className={cn(
@@ -17,26 +21,28 @@ function CommonLayout() {
             </main>
 
             {/* Footer */}
-            <footer className="p-4 w-full text-center text-white text-sm md:text-base">
-                Crafted with 🤍 by{" "}
-                <a
-                    className="text-blue-300 underline-offset-2 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    href="https://github.com/allajahzan"
-                >
-                    Ahsan allaj pk
-                </a>{" "}
-                | 🔓 open-source on{" "}
-                <a
-                    className="text-blue-300 underline-offset-2 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    href="https://github.com/allajahzan/auto-report-generator"
-                >
-                    GitHub
-                </a>
-            </footer>
+            {!connection && (
+                <footer className="p-4 w-full text-center text-white text-sm md:text-base">
+                    Crafted with 🤍 by{" "}
+                    <a
+                        className="text-blue-300 underline-offset-2 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://github.com/allajahzan"
+                    >
+                        Ahsan allaj pk
+                    </a>{" "}
+                    | 🔓 open-source on{" "}
+                    <a
+                        className="text-blue-300 underline-offset-2 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        href="https://github.com/allajahzan/auto-report-generator"
+                    >
+                        GitHub
+                    </a>
+                </footer>
+            )}
         </div>
     );
 }
