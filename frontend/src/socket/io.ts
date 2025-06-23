@@ -1,6 +1,6 @@
 import type { IGroup } from "@/components/auth/modal-select-group";
-import { BASE_URL } from '@/constants/base-url';
-import io from 'socket.io-client'
+import { BASE_URL } from "@/constants/base-url";
+import io from "socket.io-client";
 
 const socket = io(BASE_URL);
 
@@ -8,7 +8,7 @@ const socket = io(BASE_URL);
 export const refreshSocket = (phoneNumber: string) => {
     try {
         socket.emit("refresh-socket", phoneNumber);
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -17,7 +17,7 @@ export const refreshSocket = (phoneNumber: string) => {
 export const getStarted = (phoneNumber: string) => {
     try {
         socket.emit("get-started", phoneNumber);
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -28,7 +28,7 @@ export const getQRcode = (callback: (qrCode: string) => void) => {
         socket.on("get-qrcode", (qrCode) => {
             callback(qrCode);
         });
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -44,7 +44,7 @@ export const botStatus = (
         socket.on("bot-status", (status, message) => {
             callback(status, message);
         });
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -55,7 +55,7 @@ export const groupList = (callback: (groupList: IGroup[]) => void) => {
         socket.on("group-list", (groupList: IGroup[]) => {
             callback(groupList);
         });
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -64,7 +64,7 @@ export const groupList = (callback: (groupList: IGroup[]) => void) => {
 export const getParticipants = (phoneNumber: string, groupId: string) => {
     try {
         socket.emit("get-participants", phoneNumber, groupId);
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -76,6 +76,7 @@ export const pariticipantsList = (
             id: string;
             name: string;
             phoneNumber: string;
+            role: string;
             profilePic: string;
         }[]
     ) => void
@@ -84,7 +85,7 @@ export const pariticipantsList = (
         socket.on("participants-list", (paricipants) => {
             callback(paricipants);
         });
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -92,17 +93,24 @@ export const pariticipantsList = (
 // Emit to submit selected group and participants details
 export const submitGroupAndParticipants = (
     groupId: string,
-    participants: { id: string; name: string; phoneNumber: string }[],
+    batchName: string,
+    participants: {
+        id: string;
+        name: string;
+        phoneNumber: string;
+        role: string;
+    }[],
     phoneNumber: string
 ) => {
     try {
         socket.emit(
             "submit-group-and-participants",
             groupId,
+            batchName,
             participants,
             phoneNumber
         );
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };
@@ -115,7 +123,7 @@ export const resultSubmitGroupAndParticipants = (
         socket.on("submit-group-and-participants-result", (status) => {
             callback(status);
         });
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err);
     }
 };

@@ -56,14 +56,22 @@ export const connectSocketIO = (server: http.Server) => {
 
                             // If connected create a batch
                             if (status === "connected") {
-                                const batch = await batchRepository.create({
+                                await batchRepository.create({
                                     coordinatorId: phoneNumber,
                                 });
                             }
                         }
                     );
-                } catch (err: unknown) {
-                    throw err;
+                } catch (err) {
+                    const socketId = activeUsers[phoneNumber];
+
+                    if (socketId) {
+                        io.to(socketId).emit(
+                            "bot-status",
+                            "error",
+                            "Failed connecting to Report Buddy 🤧"
+                        );
+                    }
                 }
             });
 
@@ -79,7 +87,7 @@ export const connectSocketIO = (server: http.Server) => {
                             .emit(
                                 "bot-status",
                                 "error",
-                                "Connection to report buddy is lost ⛓️‍💥"
+                                "Connection to Report Buddy is lost ⛓️‍💥"
                             );
                     }
 
@@ -108,21 +116,29 @@ export const connectSocketIO = (server: http.Server) => {
                     );
 
                     io.to(socket.id).emit("participants-list", participants);
-                } catch (err: unknown) {
-                    throw err;
+                } catch (err) {
+                    io.to(socket.id).emit(
+                        "bot-status",
+                        "error",
+                        "Connection to Report Buddy is lost ⛓️‍💥"
+                    );
                 }
             });
 
             // Submit group and participants details
             socket.on(
                 "submit-group-and-participants",
-                async (groupId, participants, phoneNumber) => {
+                async (groupId, batchName, participants, phoneNumber) => {
                     try {
                         // Baileys socket
                         const sock = getSocket(phoneNumber);
 
                         if (!sock) {
-                            return fn1(socket);
+                            return fn1(
+                                socket,
+                                "error",
+                                "Connection to Report Buddy is lost ⛓️‍💥"
+                            );
                         }
 
                         // Batch
@@ -137,7 +153,7 @@ export const connectSocketIO = (server: http.Server) => {
                             return fn1(
                                 socket,
                                 "conflict",
-                                "This group is already connected by another coordinator 🤥"
+                                "This group is already selected by another coordinator 🤥"
                             );
                         }
 
@@ -147,41 +163,41 @@ export const connectSocketIO = (server: http.Server) => {
                         });
 
                         if (!batch) {
-                            return fn1(socket);
+                            return fn1(socket, "not-found", "Something went wrong 🤥");
                         }
 
                         const updatedBatch = await batchRepository.update(
                             { coordinatorId: phoneNumber },
-                            { $set: { groupId, participants } },
+                            { $set: { groupId, batchName, participants } },
                             { new: true }
                         );
 
                         if (!updatedBatch) {
-                            return fn1(socket);
+                            return fn1(socket, "update-failed", "Something went wrong 🤥");
                         }
 
                         io.to(socket.id).emit("submit-group-and-participants-result", true);
-                    } catch (err: unknown) {
-                        throw err;
+                    } catch (err) {
+                        io.to(socket.id).emit(
+                            "bot-status",
+                            "error",
+                            "Something went wrong 🤥"
+                        );
                     }
                 }
             );
         });
-    } catch (err: unknown) {
+    } catch (err) {
         console.log(err, "my error");
     }
 };
 
 // Repeated function
-function fn1(socket: Socket, error?: string, message?: string) {
+function fn1(socket: Socket, error: string, message: string) {
     try {
         io.to(socket.id).emit("submit-group-and-participants-result", false);
-        io.to(socket.id).emit(
-            "bot-status",
-            error ? error : "error",
-            message ? message : "Connection to report buddy is lost ⛓️‍💥"
-        );
-    } catch (err: unknown) {
+        io.to(socket.id).emit("bot-status", error, message);
+    } catch (err) {
         throw err;
     }
 }

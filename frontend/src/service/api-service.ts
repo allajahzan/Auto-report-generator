@@ -10,7 +10,7 @@ export const fetchData = async (url: string) => {
         });
 
         return resp;
-    } catch (err: unknown) {
+    } catch (err) {
         throw err;
     }
 };
@@ -25,7 +25,7 @@ export const postData = async (url: string, data: any) => {
         });
 
         return resp;
-    } catch (err: unknown) {
+    } catch (err) {
         throw err;
     }
 };
@@ -40,7 +40,7 @@ export const updateData = async (url: string, data: any) => {
         });
 
         return resp;
-    } catch (err: unknown) {
+    } catch (err) {
         throw err;
     }
 };
@@ -55,7 +55,7 @@ export const patchData = async (url: string, data: any) => {
         });
 
         return resp;
-    } catch (err: unknown) {
+    } catch (err) {
         throw err;
     }
 };
@@ -70,7 +70,7 @@ export const deleteData = async (url: string) => {
         });
 
         return resp;
-    } catch (err: unknown) {
+    } catch (err) {
         throw err;
     }
 };

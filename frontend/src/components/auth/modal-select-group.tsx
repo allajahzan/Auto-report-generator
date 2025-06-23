@@ -4,17 +4,22 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from "../ui/dialog";
+} from "@/components/ui/dialog";
 import {
     ChevronLeft,
-    Focus,
+    Home,
     Loader2,
     Phone,
     UserRound,
     UsersRound,
 } from "lucide-react";
-import { useEffect, useLayoutEffect, useState, type ChangeEvent } from "react";
-import NotFoundOrbit from "../common/not-found-orbit";
+import {
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type ChangeEvent,
+} from "react";
 import GroupList from "./groups-lists";
 import {
     getParticipants,
@@ -22,13 +27,17 @@ import {
     resultSubmitGroupAndParticipants,
     submitGroupAndParticipants,
 } from "@/socket/io";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import profile from "@/assets/images/groups.svg";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/auth-context";
 import { useNotification } from "@/context/notification-context";
+import { Label } from "@/components/ui/label";
+import { motion } from "framer-motion";
+import Loader from "../common/loader";
+import NotFound from "../common/not-found";
 
 // Interface for group
 export interface IGroup {
@@ -46,23 +55,32 @@ interface PropsType {
 
 // Select group modal Component
 function SelectGroupModal({ open, setOpen, groups }: PropsType) {
-    // Phone number
-    const phoneNumber = localStorage.getItem("phoneNumber") || "";
-
     // Group states
     const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
 
     // Participants
     const [participants, setParticipants] = useState<
-        { id: string; name: string; phoneNumber: string; profilePic: string }[]
+        {
+            id: string;
+            name: string;
+            phoneNumber: string;
+            role: string;
+            profilePic: string;
+        }[]
     >([]);
+
+    const [fetching, setFetching] = useState<boolean>(false);
+
+    // Batch name
+    const batchName = useRef<string>("");
+    const error = useRef<HTMLParagraphElement>(null);
 
     const [submiting, setSubmiting] = useState<boolean>(false);
 
     const navigate = useNavigate();
 
     // Auth context
-    const { setConnection, setGroupId } = useAuth();
+    const { phoneNumber, setConnection, setGroupId } = useAuth();
 
     // Notifiation context
     const { setNotification } = useNotification();
@@ -91,13 +109,23 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
     // Handle submit
     const handleSubmit = async () => {
+        if (!batchName.current) {
+            if (error.current) error.current.innerHTML = "Enter batch name";
+            return;
+        }
+
+        if (error.current) error.current.innerHTML = "";
+
         setSubmiting(true);
+
         submitGroupAndParticipants(
             selectedGroup?.id as string,
+            batchName.current.toUpperCase(),
             participants.map((p) => ({
                 id: p.id,
                 name: p.name,
                 phoneNumber: p.phoneNumber,
+                role: p.role,
             })),
             phoneNumber
         );
@@ -107,6 +135,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
     useLayoutEffect(() => {
         if (selectedGroup) {
             getParticipants(phoneNumber || "", selectedGroup?.id as string);
+            setFetching(true);
         }
     }, [selectedGroup]);
 
@@ -114,6 +143,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
     useLayoutEffect(() => {
         pariticipantsList((participants) => {
             setParticipants(participants);
+            setFetching(false);
         });
     }, []);
 
@@ -146,6 +176,9 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
         if (open) {
             setSelectedGroup(null);
             setParticipants([]);
+            if (batchName.current) {
+                batchName.current = "";
+            }
         }
     }, [open]);
 
@@ -153,60 +186,62 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
                 onClick={(e) => e.preventDefault()}
-                className="w-full sm:max-w-2xl flex flex-col gap-10 bg-my-bg-light border border-zinc-800 h-[86vh]"
+                className="w-full sm:max-w-xl flex flex-col gap-10 bg-my-bg-light border border-zinc-800 h-[86vh]"
             >
                 <DialogHeader>
                     <DialogTitle className="text-white text-base flex items-center gap-3 text-start w-[calc(100%-5%)]">
-                        <div className="p-2 bg-zinc-800 rounded-full self-start">
-                            <UsersRound className="w-4 h-4" />
-                        </div>
                         <span>
                             {!selectedGroup
-                                ? "Select a group you wanna get tracked by report buddy"
-                                : "Fill participants name of corresponding phone number"}
+                                ? "Select a group to be tracked by Report Buddy."
+                                : "Complete the form below to proceed."}
                         </span>
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground font-medium text-xs text-start">
                         {!selectedGroup
-                            ? "The selected group will be tracked by report buddy to make reports for all days."
-                            : "This will be the name used in reports for the corresponding phone number."}
+                            ? "Report Buddy will track the selected group and generate daily reports."
+                            : "These are the details of the group (your batch) you've selected."}
                     </DialogDescription>
                 </DialogHeader>
 
                 {/* Groups lists */}
                 {!selectedGroup && (
-                    <div className="flex flex-col gap-2 text-white font-medium overflow-auto no-scrollbar">
-                        {groups.length > 0 &&
-                            groups.map((grp, index) => {
-                                return (
-                                    <GroupList
-                                        key={index}
-                                        index={index}
-                                        action={() => {
-                                            setSelectedGroup(groups[index]);
-                                        }}
-                                        className=""
-                                        group={grp}
-                                        selectedGroup={selectedGroup}
-                                    />
-                                );
-                            })}
-                        {groups.length === 0 && (
-                            <NotFoundOrbit
-                                MainIcon={UsersRound}
-                                SubIcon={Focus}
-                                text="No groups found"
-                                message="No groups in your whatsapp"
-                                className="h-[320px]"
-                            />
-                        )}
+                    <div className="h-full flex flex-col gap-4 overflow-hidden">
+                        {/* Title */}
+                        <div className="flex items-center gap-2 text-white">
+                            <div className="p-2 rounded-full text-white">
+                                <UsersRound className="w-4 h-4" />
+                            </div>
+                            <p className="font-medium text-sm">Whatspp groups</p>
+                        </div>
+
+                        <div className="h-full flex flex-col gap-2 text-white font-medium overflow-auto no-scrollbar">
+                            {/* Lists */}
+                            {groups.length > 0 &&
+                                groups.map((grp, index) => {
+                                    return (
+                                        <GroupList
+                                            key={index}
+                                            index={index}
+                                            action={() => {
+                                                setSelectedGroup(groups[index]);
+                                            }}
+                                            className=""
+                                            group={grp}
+                                            selectedGroup={selectedGroup}
+                                        />
+                                    );
+                                })}
+
+                            {/* No list */}
+                            {groups.length === 0 && <NotFound message="No groups found" />}
+                        </div>
                     </div>
                 )}
 
-                {/* Participants lists */}
+                {/* Batch details */}
                 {selectedGroup && (
-                    <div className="h-full flex flex-col gap-5 overflow-hidden">
-                        {/* Go back */}
+                    <div className="h-full flex flex-col gap-4 overflow-hidden">
+                        {/* Title */}
                         <div
                             onClick={() => {
                                 setSelectedGroup(null);
@@ -214,61 +249,116 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                             }}
                             className="flex items-center gap-2 text-white cursor-pointer"
                         >
-                            <div className="p-2 rounded-full text-zinc-600 hover:text-zinc-100">
+                            <div className="p-2 rounded-full text-zinc-100">
                                 <ChevronLeft className="w-4 h-4" />
                             </div>
                             <p className="font-medium text-sm">{selectedGroup.name}</p>
                         </div>
 
-                        {/* Lists */}
-                        <div className="flex flex-col gap-2 text-white font-medium overflow-auto no-scrollbar">
-                            {participants.map((p, index) => (
-                                <div key={index} className="flex items-center gap-2">
-                                    {/* Profile pic */}
-                                    <Avatar className="bg-background w-10 h-10 border-2 border-zinc-800 shadow-md">
-                                        <AvatarImage src={p.profilePic} className="object-cover" />
-                                        <AvatarFallback className="bg-zinc-300">
-                                            <img className="w-full" src={profile} alt="" />
-                                        </AvatarFallback>
-                                    </Avatar>
+                        {/* Details */}
+                        <div className="h-full flex flex-col gap-3 text-white font-medium overflow-auto no-scrollbar">
+                            {/* Batch name */}
+                            <Label
+                                htmlFor="batchname"
+                                className="text-xs text-white font-medium"
+                            >
+                                Batch Name
+                            </Label>
+                            <div className="relative flex-1">
+                                <Input
+                                    id="batchname"
+                                    required
+                                    autoComplete="off"
+                                    defaultValue={batchName.current}
+                                    onChange={(e) => (batchName.current = e.target.value)}
+                                    placeholder={`Enter batch name`}
+                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                />
+                                <Home className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
+                            </div>
 
-                                    {/* Phone number */}
-                                    <div className="relative flex-1">
-                                        <Input
-                                            id={index.toString() + "phoneNumber"}
-                                            required
-                                            // readOnly
-                                            value={p.phoneNumber}
-                                            onChange={(e) =>
-                                                handleTextChange(e, "phoneNumber", p.phoneNumber)
-                                            }
-                                            placeholder={`Enter phone number`}
-                                            className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
-                                        />
-                                        <Phone className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
-                                    </div>
+                            {/* Error */}
+                            <p
+                                ref={error}
+                                className="relative font-medium text-xs text-red-600"
+                            ></p>
 
-                                    {/* Name */}
-                                    <div className="relative flex-1">
-                                        <Input
-                                            id={index.toString() + "name"}
-                                            required
-                                            autoComplete="off"
-                                            value={p.name}
-                                            onChange={(e) =>
-                                                handleTextChange(e, "name", p.phoneNumber)
-                                            }
-                                            placeholder={`Name`}
-                                            className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
-                                        />
-                                        <UserRound className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
+                            {/* Participants */}
+                            <Label className="text-xs text-white font-medium">
+                                Participants
+                            </Label>
+
+                            {/* Lists */}
+                            <div className="h-full flex flex-col gap-2">
+                                {!fetching &&
+                                    participants.length > 0 &&
+                                    participants.map((p, index) => (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.2 + index * 0.1 }}
+                                            key={index}
+                                            className="flex items-center gap-2"
+                                        >
+                                            {/* Profile pic */}
+                                            <Avatar className="bg-background w-10 h-10 border-2 border-zinc-800 shadow-md">
+                                                <AvatarImage
+                                                    src={p.profilePic}
+                                                    className="object-cover"
+                                                />
+                                                <AvatarFallback className="bg-zinc-300">
+                                                    <img className="w-full" src={profile} alt="" />
+                                                </AvatarFallback>
+                                            </Avatar>
+
+                                            {/* Phone number */}
+                                            <div className="relative flex-1">
+                                                <Input
+                                                    id={index.toString() + "phoneNumber"}
+                                                    required
+                                                    value={p.phoneNumber}
+                                                    readOnly
+                                                    placeholder={`Enter phone number`}
+                                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                                />
+                                                <Phone className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
+                                            </div>
+
+                                            {/* Name */}
+                                            <div className="relative flex-1">
+                                                <Input
+                                                    id={index.toString() + "name"}
+                                                    required
+                                                    autoComplete="off"
+                                                    value={p.name}
+                                                    onChange={(e) =>
+                                                        handleTextChange(e, "name", p.phoneNumber)
+                                                    }
+                                                    placeholder={`Enter name`}
+                                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                                />
+                                                <UserRound className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
+                                            </div>
+                                        </motion.div>
+                                    ))}
+
+                                {/* If no participants */}
+                                {!fetching && participants.length === 0 && (
+                                    <NotFound message="No participants found" />
+                                )}
+
+                                {/* Loader */}
+                                {fetching && (
+                                    <div className="h-full flex items-center justify-center">
+                                        <Loader />
                                     </div>
-                                </div>
-                            ))}
+                                )}
+                            </div>
                         </div>
                     </div>
                 )}
 
+                {/* Submit button */}
                 {selectedGroup && (
                     <div className="flex justify-end gap-2">
                         <Button

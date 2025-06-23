@@ -74,7 +74,7 @@ function GetStarted() {
 
             setNotification({
                 id: Date.now().toString(),
-                message: "Scan this QR code, connect to report buddy 🔗",
+                message: "Scan this QR code, connect to Report Buddy 🔗",
             });
         });
     }, []);
@@ -139,6 +139,8 @@ function GetStarted() {
                     setPhoneNumber("");
                     localStorage.removeItem("qr");
                     setQr("");
+
+                    setLoading(false);
                 }}
                 className="absolute left-0 top-0 p-4 cursor-pointer active:animate-spin"
             >
@@ -154,7 +156,7 @@ function GetStarted() {
                 >
                     <i>Your Smart</i> Session
                     <br />
-                    Report buddy
+                    Report Buddy
                 </motion.h1>
 
                 <motion.p
@@ -185,6 +187,8 @@ function GetStarted() {
                             />
                             <Phone className="w-4 h-4 absolute left-3 top-[14px] text-muted-foreground" />
                         </motion.div>
+
+                        {/* Error */}
                         <p
                             ref={error}
                             className="absolute left-0 top-[-1.5rem] font-medium text-xs text-red-600"
@@ -248,7 +252,7 @@ function GetStarted() {
                         <p className="w-72 flex items-center gap-2 relative font-medium text-white text-sm italic">
                             <span className="self-start">→</span>
                             If you are scanning with a different phone number, your WhatsApp
-                            will be linked but access will be denied from report buddy.
+                            will be linked but access will be denied from Report Buddy.
                         </p>
                     </motion.div>
                 )}

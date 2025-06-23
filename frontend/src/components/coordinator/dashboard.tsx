@@ -5,17 +5,20 @@ import { useQuery } from "@tanstack/react-query";
 import {
     Calendar,
     Dot,
+    Link,
     Loader2,
-    LogOut,
     Pencil,
     UserRound,
     UsersRound,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/auth-context";
 import NameCard from "../common/name-card";
+import robo from "@/assets/images/student.png";
+import { botStatus, getStarted } from "@/socket/io";
+import Loader from "../common/loader";
 
 // Dashboard coordinator
 function DashboardCoordinator() {
@@ -24,12 +27,50 @@ function DashboardCoordinator() {
     const phoneNumber = params.phoneNumber;
     const groupId = params.groupId;
 
+    const [connecting, setConnecting] = useState<boolean>(false);
+
     // Auth context
     const { setConnection } = useAuth();
 
     // Notification context
     const { setNotification } = useNotification();
 
+    // Handle connection
+    const handleConnection = () => {
+        getStarted(phoneNumber as string);
+        setConnecting(true);
+    };
+
+    // Listen BOT status
+    useEffect(() => {
+        botStatus((status, message) => {
+            if (status === "connected") {
+                setNotification({
+                    id: Date.now().toString(),
+                    message,
+                });
+
+                window.location.reload();
+            } else if (status === "disconnected") {
+                setNotification({
+                    id: Date.now().toString(),
+                    message,
+                });
+
+                localStorage.removeItem("connection");
+                setConnection(false);
+            } else if (status === "error") {
+                setNotification({
+                    id: Date.now().toString(),
+                    message,
+                });
+            }
+
+            setConnecting(false);
+        });
+    }, []);
+
+    // useQuery for fetching batch info
     const { data, error, isError, isLoading } = useQuery({
         queryKey: ["batch"],
         queryFn: async () => {
@@ -47,67 +88,68 @@ function DashboardCoordinator() {
         retry: false,
     });
 
+    // Handle error
     useEffect(() => {
         if (isError) {
             if ((error as any).status === 403) {
                 setNotification({
                     id: Date.now().toString(),
-                    message: "Connection to report buddy is lost ⛓️‍💥",
-                });
-            } else {
-                setNotification({
-                    id: Date.now().toString(),
-                    message: "Something went wrong, please try again 😵",
+                    message: "Connection to Report Buddy is lost ⛓️‍💥",
                 });
             }
         }
     }, [isError]);
 
-    if (data) {
-        console.log(data);
-    }
-
     return (
         <div className="h-full w-full overflow-hidden">
+            {/* Loader */}
             {isLoading && (
                 <div className="h-full flex items-center justify-center p-5">
-                    <Loader2 className="w-5 h-5 animate-spin text-white" />
+                    <Loader />
                 </div>
             )}
+
+            {/* Forbidden - connection lost */}
             {isError && (error as any).status === 403 && (
-                <div className="h-full flex items-center justify-center p-5">
+                <div className="relative h-full flex flex-col items-center justify-center gap-5 p-5">
+                    <img className="w-24" src={robo} alt="" />
+                    <p className="font-medium text-white text-center text-lg italic relative -top-2">
+                        "You have lost your connection with Report Buddy,
+                        <br />
+                        connect again!"
+                    </p>
                     <Button
-                        onClick={() => {
-                            localStorage.removeItem("connection");
-                            setConnection(false);
-                        }}
+                        onClick={handleConnection}
                         type="button"
-                        className="h-11 w-full sm:w-44 text-center cursor-pointer disabled:cursor-not-allowed shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
+                        disabled={connecting}
+                        className="h-11 w-full sm:w-44 text-center cursor-pointer disabled:cursor-not-allowed shadow-none 
+                        bg-transparent hover:bg-transparent text-white relative -top-4"
                     >
-                        {false ? (
+                        {connecting ? (
                             <span className="flex items-center gap-2">
                                 <Loader2 className="w-5 h-5 animate-spin" />
                                 <p>Processing</p>
                             </span>
                         ) : (
                             <span className="flex items-center gap-2">
-                                <LogOut className="w-5 h-5" />
-                                <p>Logout</p>
+                                <Link className="w-5 h-5" />
+                                <p>Connect</p>
                             </span>
                         )}
                     </Button>
                 </div>
             )}
 
+            {/* Other errors */}
             {isError && (error as any).status !== 403 && (
                 <div className="h-full flex items-center justify-center text-white p-5">
-                    {/* <img src={bot} alt="" /> */}
-                    <p className="font-medium text-center text-xl">
-                        Something went wrong, please try again later 😵
+                    <p className="font-medium text-center text-lg italic">
+                        "Something went wrong, please try again later!"
                     </p>
                 </div>
             )}
 
+            {/* Dashboard */}
             {data && (
                 <div className="w-full max-w-6xl mx-auto h-full flex flex-col gap-5 p-5 sm:p-10 overflow-auto no-scrollbar">
                     {/* Header */}
@@ -116,7 +158,7 @@ function DashboardCoordinator() {
                         <div className="flex justify-between">
                             <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
                                 <span className="text-white text-2xl sm:text-3xl">
-                                    {data.batchName || "Batch Name"}
+                                    {data.batchName}
                                 </span>{" "}
                                 Communication batch
                             </h1>

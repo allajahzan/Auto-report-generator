@@ -8,10 +8,12 @@ const batchSchema = new Schema<IBatchSchema>(
             type: String,
             required: true,
             unique: true,
+            index: true
         },
         groupId: {
             type: String,
             unique: true,
+            index: true,
         },
         batchName: {
             type: String,
