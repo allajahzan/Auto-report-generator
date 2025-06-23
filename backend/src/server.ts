@@ -19,14 +19,14 @@ const startServer = async () => {
         const db = new MongodbConnection(process.env.MONGO_DB_URL as string);
         await db.retryConnection();
 
+        // Start baileys sockets
+        startSocketOnServerStart();
+
         // Server
         const server = http.createServer(app);
 
         // Connect socket-io
         connectSocketIO(server);
-
-        // Start baileys sockets
-        startSocketOnServerStart();
 
         //listen to port
         server.listen(process.env.PORT, () =>

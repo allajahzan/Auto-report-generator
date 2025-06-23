@@ -62,8 +62,8 @@ export const startSocket = async (
 
                     try {
                         fs.rmSync(authPath, { recursive: true, force: true });
-                    } catch (err: unknown) {
-                        console.log(err, "Failed to delete auth_info");
+                    } catch (err) {
+                        console.error("Failed to delete auth_info", err);
                     }
 
                     sock.ws.close();
@@ -92,7 +92,7 @@ export const startSocket = async (
                     try {
                         await sock.logout();
                     } catch (err) {
-                        console.log("Failed to logout:", err);
+                        console.error("Failed to logout:", err);
                     }
 
                     return;
@@ -101,7 +101,7 @@ export const startSocket = async (
                 console.log("✅ Connected to BOT:", phoneNumber);
                 setSocket(phoneNumber, sock);
 
-                emitStatus("connected", "Successfully connected to report buddy 👏");
+                emitStatus("connected", "Successfully connected to Report Buddy 👏");
 
                 // Fetch groups
                 try {
@@ -168,15 +168,15 @@ export const startSocket = async (
                     setTimeout(() => {
                         try {
                             fs.rmSync(authPath, { recursive: true, force: true });
-                        } catch (err: unknown) {
-                            console.log(err, "Failed to delete auth_info");
+                        } catch (err) {
+                            console.error("Failed to delete auth_info", err);
                         }
                     }, 3000);
 
                     if (connectedPhone === phoneNumber) {
                         emitStatus(
                             "disconnected",
-                            "You have been logged-out from report buddy 👎"
+                            "You have been logged-out from Report Buddy 👎"
                         );
                     }
                 }
@@ -194,7 +194,7 @@ export const startSocket = async (
                     } else {
                         // Retries limit reached
                         console.log("⌛ Retries limit reached:", phoneNumber);
-                        emitStatus("error", "Failed reconnecting to report buddy 🤧");
+                        emitStatus("error", "Failed reconnecting to Report Buddy 🤧");
                     }
                 }
             }
@@ -289,10 +289,12 @@ export const startSocket = async (
                                     },
                                     { $set: { "audioTaskReport.$.isCompleted": true } }
                                 );
+
                                 console.log("Completed attendence for:", sender.phoneNumber);
                             } else {
                                 // Delete the report of sender if time is over
                                 console.log("Time is over for :", sender.phoneNumber);
+
                                 await batchRepository.update(
                                     {
                                         coordinatorId: phoneNumber,
@@ -306,10 +308,14 @@ export const startSocket = async (
                                 );
 
                                 // Notify the sender
-                                await sock.sendMessage(sender.id, {
-                                    text: `Dear ${sender.name || "Participant"
-                                        },\nYour audio task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Coordinator`,
-                                });
+                                try {
+                                    await sock.sendMessage(sender.id, {
+                                        text: `Dear ${sender.name || "Participant"
+                                            },\nYour audio task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Coordinator`,
+                                    });
+                                } catch (err) {
+                                    console.error("Failed to notify sender for:", phoneNumber);
+                                }
                             }
                         }
                     }
@@ -367,40 +373,64 @@ export const startSocket = async (
                 }
 
                 // Send audio task report in group
-                await sock.sendMessage(batch.groupId, { text });
+                try {
+                    await sock.sendMessage(batch.groupId, { text });
+                } catch (err) {
+                    console.error(
+                        "Failed to send audio task report in group for:",
+                        phoneNumber
+                    );
+                }
             }
         );
     } catch (err) {
         console.error("Error creating socket or during startup:", err);
-        emitStatus("error", "Failed connecting to report buddy 🤧");
+        emitStatus("error", "Failed connecting to Report Buddy 🤧");
     }
 };
 
 // Start socket on server start
-export const startSocketOnServerStart = () => {
+export const startSocketOnServerStart = async () => {
+    const authDir = "src/auth_info";
+
     try {
-        const authDir = "src/auth_info";
         const existingUsers = fs.readdirSync(authDir);
 
         for (const phoneNumber of existingUsers) {
+            const batch = await batchRepository.findOne({
+                coordinatorId: phoneNumber,
+            });
+
+            if (!batch || !batch.groupId) return;
+
+            console.log(phoneNumber, "to start socket");
+
             startSocket(
                 phoneNumber,
-                (qr) => { },
-                (status, message) => { }
+                () => { },
+                () => { }
             );
         }
 
         // Refresh every 2 minutes
-        setInterval(() => {
+        setInterval(async () => {
             for (const phoneNumber of existingUsers) {
+                const batch = await batchRepository.findOne({
+                    coordinatorId: phoneNumber,
+                });
+
+                if (!batch || !batch.groupId) return;
+
+                console.log(phoneNumber, "to start socket");
+
                 startSocket(
                     phoneNumber,
-                    (qr) => { },
-                    (status, message) => { }
+                    () => { },
+                    () => { }
                 );
             }
         }, 60 * 1000 * 2);
-    } catch (err: unknown) {
-        throw err;
+    } catch (err) {
+        console.error("Error in startSocketOnServerStart:", err);
     }
 };
