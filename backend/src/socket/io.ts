@@ -111,6 +111,7 @@ export const connectSocketIO = (server: http.Server) => {
                                     name: p.name || "",
                                     phoneNumber: p.id.split("@")[0].slice(2),
                                     profilePic,
+                                    role: "",
                                 };
                             })
                     );

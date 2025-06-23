@@ -11,9 +11,16 @@ import { removeSocket, setSocket } from "./socket-store";
 import { BatchRepository } from "../repository/implementation/batchRepository";
 import Batch from "../model/batchSchema";
 import schedule from "node-schedule";
+import { ReportRepository } from "../repository/implementation/reportRepository";
+import Report from "../model/reportSchema";
+import { ObjectId } from "mongoose";
+import { report } from "process";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);
+
+// Report repository
+const reportRepository = new ReportRepository(Report);
 
 // Start baileys socket
 export const startSocket = async (
@@ -204,7 +211,7 @@ export const startSocket = async (
         sock.ev.on("messages.upsert", async ({ messages, type }) => {
             // Between 15-22PM (3-10PM)
             const time = new Date().getHours();
-            if (time < 15 || time > 22) return;
+            // if (time < 15 || time > 22) return;
 
             // Batch
             const batch = await batchRepository.findOne({
@@ -222,69 +229,101 @@ export const startSocket = async (
 
                 // Check with group ID
                 if (isMessageFromGroup && groupIdFromDB === msg.key.remoteJid) {
+                    const msgSender = msg.key.participant;
+                    const sender = batch.participants.find((p) => p.id === msgSender);
+
+                    if (!sender) return;
+
+                    console.log("sender name:", sender.name, "sender role:", sender.role);
+
+                    // If not student, stop
+                    if (sender.role !== "student") return;
+
                     const textMessage =
                         msg.message?.conversation ||
                         msg.message?.extendedTextMessage?.text ||
                         "";
 
-                    console.log(textMessage ? textMessage : undefined);
+                    console.log("message: ", textMessage ? textMessage : undefined);
 
-                    // Check if message is text and "Audio task"
-                    const isTextIs_audiotask = /\baudio\s*task\b/i.test(
+                    // Check if message is text and it is "Audio task"
+                    const isTextIsAudioTask = /\baudio\s*task\b/i.test(
                         textMessage.trim()
                     );
 
-                    console.log("'audio task':", isTextIs_audiotask);
+                    console.log("Text is 'Audio task':", isTextIsAudioTask);
 
-                    const msgSender = msg.key.participant;
-                    const sender = batch.participants.find((p) => p.id === msgSender);
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
 
-                    console.log("sender :", sender?.name);
+                    // If message is text and it is "Audio task"
+                    if (isTextIsAudioTask && sender) {
+                        // Check if report of this batch exists for this day
+                        let isReportExist = await reportRepository.findOne({
+                            batchId: batch._id,
+                            date: now,
+                        });
 
-                    // If message is text and "Audio task"
-                    if (isTextIs_audiotask && sender) {
-                        const now = new Date();
+                        if (!isReportExist) {
+                            isReportExist = await reportRepository.create({
+                                batchId: batch._id as unknown as ObjectId,
+                                date: now,
+                            });
+                        }
 
-                        // Check if report already exists
-                        const existingReportIndex = batch.audioTaskReport.findIndex(
-                            (r) => r.phoneNumber === sender.phoneNumber
-                        );
+                        if (!isReportExist) return;
+
+                        const existingReportOfSenderIndex =
+                            isReportExist.audioTaskReport.findIndex(
+                                (r) => r.phoneNumber === sender.phoneNumber
+                            );
 
                         // Not exist, then add new report for sender
-                        if (existingReportIndex === -1) {
-                            await batchRepository.update(
-                                { coordinatorId: phoneNumber },
+                        if (existingReportOfSenderIndex === -1) {
+                            await reportRepository.update(
+                                { batchId: batch._id },
                                 {
                                     $push: {
                                         audioTaskReport: {
-                                            name: sender.name || "Unknown",
+                                            id: sender.id,
+                                            name: sender.name || sender.phoneNumber,
                                             phoneNumber: sender.phoneNumber,
                                             isCompleted: false,
-                                            timestamp: now,
+                                            timestamp: new Date(),
                                         },
                                     },
                                 }
                             );
-                            console.log("Marked attendence for:", sender.phoneNumber);
+
+                            console.log("Created attendence for:", sender.phoneNumber);
                         }
                     }
 
                     // If message is audio
                     if (msg.message?.audioMessage && sender) {
-                        const existing = batch.audioTaskReport.find(
+                        // Check if report of this batch exists for this day
+                        let isReportExist = await reportRepository.findOne({
+                            batchId: batch._id,
+                            date: now,
+                        });
+
+                        if (!isReportExist) return;
+
+                        const existingReportOfSender = isReportExist.audioTaskReport.find(
                             (r) => r.phoneNumber === sender.phoneNumber
                         );
 
-                        if (existing && existing.isCompleted === false) {
+                        if (existingReportOfSender && !existingReportOfSender.isCompleted) {
                             // Time difference
                             const timeDiff =
-                                new Date().getTime() - new Date(existing.timestamp).getTime();
+                                new Date().getTime() -
+                                new Date(existingReportOfSender.timestamp).getTime();
 
                             // Within 2 minutes
-                            if (timeDiff <= 2 * 60 * 1000 && !existing.isCompleted) {
-                                await batchRepository.update(
+                            if (timeDiff <= 2 * 60 * 1000) {
+                                await reportRepository.update(
                                     {
-                                        coordinatorId: phoneNumber,
+                                        batchId: batch._id,
                                         "audioTaskReport.phoneNumber": sender.phoneNumber,
                                     },
                                     { $set: { "audioTaskReport.$.isCompleted": true } }
@@ -295,9 +334,9 @@ export const startSocket = async (
                                 // Delete the report of sender if time is over
                                 console.log("Time is over for :", sender.phoneNumber);
 
-                                await batchRepository.update(
+                                await reportRepository.update(
                                     {
-                                        coordinatorId: phoneNumber,
+                                        batchId: batch._id,
                                         "audioTaskReport.phoneNumber": sender.phoneNumber,
                                     },
                                     {
@@ -325,42 +364,66 @@ export const startSocket = async (
 
         // Scheduled task to send audio task report at 22:05PM (10:05PM)
         schedule.scheduleJob(
-            `audio-task-report${phoneNumber}`,
+            `audio-task-report${phoneNumber + "-" + new Date().getTime()}`,
             "5 22 * * *",
             async () => {
+                console.log("Sending audio task report at 22:05PM");
+
                 const batch = await batchRepository.findOne({
                     coordinatorId: phoneNumber,
                 });
 
                 if (!batch) return;
 
+                // Participants
                 const participants = batch.participants;
-                const audioTaskReport = batch.audioTaskReport;
+
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+
+                // Report of this batch for this day
+                const isReportExist = await reportRepository.findOne({
+                    batchId: batch._id,
+                    date: now,
+                });
+
+                // If report of this batch exists,
+                // get audioTaskReport or else take audioTaskReport as empty array
+                const audioTaskReport = isReportExist?.audioTaskReport || [];
 
                 let audio_task_report: Record<string, boolean> = {};
 
+                // Iterate through participants
                 for (const p of participants) {
-                    // if(p.role === "student")
-                    const report = audioTaskReport.find(
+                    if (p.role !== "student") continue;
+
+                    const existingReportOfStudent = audioTaskReport.find(
                         (r) => r.phoneNumber === p.phoneNumber
                     );
 
-                    if (report && report.isCompleted) {
-                        audio_task_report[report.name] = true;
+                    if (existingReportOfStudent && existingReportOfStudent.isCompleted) {
+                        audio_task_report[existingReportOfStudent.name] = true;
                     } else {
                         audio_task_report[p.name || p.phoneNumber] = false;
                     }
                 }
 
-                const formattedDate = new Date().toLocaleDateString("en-GB", {
+                // Other details for report
+                const formattedDate = now.toLocaleDateString("en-GB", {
                     day: "2-digit",
                     month: "2-digit",
                     year: "numeric",
                 });
+                const coordinator = participants.find(
+                    (p) => p.phoneNumber === phoneNumber
+                );
+                const trainer = participants.find((p) => p.role === "trainer");
 
+                // audio task report => text
                 let text = `Audio task report\n🎓BATCH : ${batch.batchName
-                    }\n📅Date: ${formattedDate}\n👨‍🏫Trainer : ${false || "Divya"
-                    }\n🎤Coordinators: ${"A & B"}\n🗺Topic: An audio to your future self\n\nSubmitted:`;
+                    }\n📅Date: ${formattedDate}\n👨‍🏫Trainer : ${trainer?.name || "Unknown"
+                    }\n🎤Coordinator: ${coordinator?.name || "Unknown"}\n📝Topic:${batch.audioTaskTopic || "Not mentioned"
+                    }\n\nSubmitted:`;
 
                 for (const p in audio_task_report) {
                     if (audio_task_report[p]) text += `\n${p}:✅`;
@@ -372,7 +435,7 @@ export const startSocket = async (
                     if (!audio_task_report[p]) text += `\n${p}:❌`;
                 }
 
-                // Send audio task report in group
+                // Send text in group
                 try {
                     await sock.sendMessage(batch.groupId, { text });
                 } catch (err) {

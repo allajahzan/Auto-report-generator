@@ -8,7 +8,7 @@ const batchSchema = new Schema<IBatchSchema>(
             type: String,
             required: true,
             unique: true,
-            index: true
+            index: true,
         },
         groupId: {
             type: String,
@@ -31,29 +31,23 @@ const batchSchema = new Schema<IBatchSchema>(
                     phoneNumber: {
                         type: String,
                     },
+                    role: {
+                        type: String,
+                    },
                 },
             ],
             default: [],
         },
-        audioTaskReport: {
-            type: [
-                {
-                    name: {
-                        type: String,
-                    },
-                    phoneNumber: {
-                        type: String,
-                    },
-                    isCompleted: {
-                        type: Boolean,
-                        default: false,
-                    },
-                    timestamp: {
-                        type: Date,
-                    },
-                },
-            ],
-            default: [],
+        audioTaskTopic: {
+            type: String,
+        },
+        isTrackingEnabled: {
+            type: Boolean,
+            default: false,
+        },
+        isSchedulingEnabled: {
+            type: Boolean,
+            default: false,
         },
         createdAt: {
             type: Date,
