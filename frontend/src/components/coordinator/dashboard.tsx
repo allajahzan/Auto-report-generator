@@ -7,16 +7,18 @@ import {
     ChevronLeft,
     Dot,
     Pencil,
-    UserRound,
+    Settings2,
     UsersRound,
 } from "lucide-react";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/auth-context";
-import NameCard from "../common/name-card";
 import robo from "@/assets/images/student.png";
 import Loader from "../common/loader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import Users from "./users";
+import Settings from "./settings";
 
 // Dashboard coordinator
 function DashboardCoordinator() {
@@ -78,7 +80,7 @@ function DashboardCoordinator() {
                 return resp.data?.data;
             }
         },
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: false,
         retry: false,
     });
 
@@ -105,17 +107,17 @@ function DashboardCoordinator() {
     }, [error]);
 
     return (
-        <div className="h-full w-full overflow-hidden">
+        <div className="h-full w-full flex items-center overflow-hidden">
             {/* Loader */}
             {isLoading && (
-                <div className="h-full flex items-center justify-center p-5">
+                <div className="w-full h-full flex items-center justify-center p-5">
                     <Loader />
                 </div>
             )}
 
             {/* Forbidden - connection lost */}
             {isError && (error as any).status === 403 && (
-                <div className="relative h-full flex flex-col items-center justify-center gap-5 p-5">
+                <div className="relative w-full h-full flex flex-col items-center justify-center gap-5 p-5">
                     <img className="w-24" src={robo} alt="" />
                     <p className="font-medium text-white text-center text-lg italic relative -top-2">
                         "You have lost your connection with Report Buddy,
@@ -141,7 +143,7 @@ function DashboardCoordinator() {
 
             {/* Other errors */}
             {isError && (error as any).status !== 403 && (
-                <div className="h-full flex items-center justify-center text-white p-5">
+                <div className="w-full h-full flex items-center justify-center text-white p-5">
                     <p className="font-medium text-center text-lg italic">
                         "Something went wrong, please try again later!"
                     </p>
@@ -152,7 +154,7 @@ function DashboardCoordinator() {
             {data && (
                 <div className="w-full max-w-6xl mx-auto h-full flex flex-col gap-5 p-5 sm:p-10 overflow-auto no-scrollbar">
                     {/* Header */}
-                    <div className=" relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
+                    <div className="relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
                         {/* Batch name */}
                         <div className="flex justify-between">
                             <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
@@ -187,64 +189,34 @@ function DashboardCoordinator() {
                         </div>
                     </div>
 
-                    {/* Coordinator */}
-                    <div className=" relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
-                        {/* Title */}
-                        <div className="flex justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
-                                    <UserRound className="w-4 h-4" />
-                                </div>
-                                <h1 className="text-lg font-extrabold text-white tracking-wide">
-                                    Batch Coordinator
-                                </h1>
-                            </div>
+                    {/* Tabs */}
+                    <Tabs defaultValue="users" className="w-full">
+                        <TabsList className="bg-my-bg-light text-white flex gap-1 p-2 py-6">
+                            <TabsTrigger
+                                className="text-white px-4 py-4 cursor-pointer"
+                                value="users"
+                            >
+                                <UsersRound /> Users
+                            </TabsTrigger>
 
-                            <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                <Pencil className="w-4 h-4" />
-                            </div>
-                        </div>
+                            <TabsTrigger
+                                className="text-white px-4 py-4 cursor-pointer"
+                                value="settings"
+                            >
+                                <Settings2 /> Settings
+                            </TabsTrigger>
+                        </TabsList>
 
-                        {/* Name and details */}
-                        <div className="flex flex-col gap-5 p-3 bg-my-bg-dark rounded-lg shadow">
-                            <NameCard
-                                data={data.participants.find(
-                                    (p: any) => p.phoneNumber === data.coordinatorId
-                                )}
-                            />
-                        </div>
-                    </div>
+                        {/* Users side */}
+                        <TabsContent value="users" className="flex flex-col gap-5">
+                            <Users data={data} />
+                        </TabsContent>
 
-                    {/* Participants */}
-                    <div className=" relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
-                        {/* Title */}
-                        <div className="flex justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
-                                    <UserRound className="w-4 h-4" />
-                                </div>
-                                <h1 className="text-lg font-extrabold text-white tracking-wide">
-                                    Participants
-                                </h1>
-                            </div>
-
-                            <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                <Pencil className="w-4 h-4" />
-                            </div>
-                        </div>
-
-                        {/* Name and details */}
-                        <div className="flex flex-col gap-2">
-                            {data.participants.map((p: any, index: number) => (
-                                <div
-                                    key={index}
-                                    className="p-3 bg-my-bg-dark rounded-lg shadow"
-                                >
-                                    <NameCard key={p.id} data={p} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                        {/* Settings */}
+                        <TabsContent value="settings">
+                            <Settings data={data} />
+                        </TabsContent>
+                    </Tabs>
                 </div>
             )}
         </div>
