@@ -21,10 +21,5 @@ app.use("/", router);
 // error handler
 app.use(errorHandler);
 
-// Unhandled rejection
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection:", reason);
-});
-
 // export app
 export default app;

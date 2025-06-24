@@ -1,8 +1,13 @@
 import { IBatchService } from "../interface/IBatchService";
 import { IBatchRepository } from "../../repository/interface/IBatchRepository";
-import { ForbiddenError, NotFoundError } from "@codeflare/common";
+import {
+    ForbiddenError,
+    NotFoundError,
+    UnauthorizedError,
+} from "@codeflare/common";
 import { getSocket } from "../../bot/socket-store";
 import { IBatchDto } from "../../dto/batchDto";
+import fs from "fs";
 
 // Implementation for Batch Service
 export class BatchService implements IBatchService {
@@ -22,6 +27,17 @@ export class BatchService implements IBatchService {
             if (!batch) throw new NotFoundError("Batch not found !");
 
             const phoneNumber = coordinatorId;
+
+            // Check if auth_info directory exists or empty
+            const auth_info_dir = `src/auth_info/${phoneNumber}`;
+
+            if (
+                !fs.existsSync(auth_info_dir) ||
+                fs.readdirSync(auth_info_dir).length === 0
+            ) {
+                throw new UnauthorizedError("auth_info not found or is empty!");
+            }
+
             const sock = getSocket(phoneNumber);
 
             if (!sock) {

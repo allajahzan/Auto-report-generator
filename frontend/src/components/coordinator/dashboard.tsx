@@ -4,20 +4,18 @@ import { fetchData } from "@/service/api-service";
 import { useQuery } from "@tanstack/react-query";
 import {
     Calendar,
+    ChevronLeft,
     Dot,
-    Link,
-    Loader2,
     Pencil,
     UserRound,
     UsersRound,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/auth-context";
 import NameCard from "../common/name-card";
 import robo from "@/assets/images/student.png";
-import { botStatus, getStarted } from "@/socket/io";
 import Loader from "../common/loader";
 
 // Dashboard coordinator
@@ -27,48 +25,43 @@ function DashboardCoordinator() {
     const phoneNumber = params.phoneNumber;
     const groupId = params.groupId;
 
-    const [connecting, setConnecting] = useState<boolean>(false);
-
     // Auth context
-    const { setConnection } = useAuth();
+    const { setPhoneNumber, setConnection, setGroupId } = useAuth();
 
     // Notification context
     const { setNotification } = useNotification();
 
-    // Handle connection
-    const handleConnection = () => {
-        getStarted(phoneNumber as string);
-        setConnecting(true);
+    // Clear auth
+    const clearAuth = () => {
+        localStorage.removeItem("phoneNumber");
+        setPhoneNumber("");
+        localStorage.removeItem("connection");
+        setConnection(false);
+        localStorage.removeItem("groupId");
+        setGroupId("");
     };
 
-    // Listen BOT status
-    useEffect(() => {
-        botStatus((status, message) => {
-            if (status === "connected") {
-                setNotification({
-                    id: Date.now().toString(),
-                    message,
-                });
+    // Check auth
+    const checkAuth = () => {
+        const phoneNumber = localStorage.getItem("phoneNumber");
+        const connection = localStorage.getItem("connection");
+        const groupId = localStorage.getItem("groupId");
 
-                window.location.reload();
-            } else if (status === "disconnected") {
-                setNotification({
-                    id: Date.now().toString(),
-                    message,
-                });
+        if (!phoneNumber || !connection || !groupId) {
+            if (!phoneNumber) setPhoneNumber("");
+            if (!groupId) setGroupId("");
 
-                localStorage.removeItem("connection");
-                setConnection(false);
-            } else if (status === "error") {
-                setNotification({
-                    id: Date.now().toString(),
-                    message,
-                });
-            }
+            localStorage.removeItem("connection");
+            setConnection(false);
 
-            setConnecting(false);
-        });
-    }, []);
+            setNotification({
+                id: Date.now().toString(),
+                message: "You are not authorized to access this page 🚫",
+            });
+            return false;
+        }
+        return true;
+    };
 
     // useQuery for fetching batch info
     const { data, error, isError, isLoading } = useQuery({
@@ -85,20 +78,31 @@ function DashboardCoordinator() {
                 return resp.data?.data;
             }
         },
+        refetchOnWindowFocus: true,
         retry: false,
     });
 
     // Handle error
     useEffect(() => {
-        if (isError) {
+        if (error) {
             if ((error as any).status === 403) {
                 setNotification({
                     id: Date.now().toString(),
                     message: "Connection to Report Buddy is lost ⛓️‍💥",
                 });
+            } else if (
+                (error as any).status === 401 ||
+                (error as any).status === 404
+            ) {
+                setNotification({
+                    id: Date.now().toString(),
+                    message: "You are not authorized to access this page 🚫",
+                });
+
+                clearAuth();
             }
         }
-    }, [isError]);
+    }, [error]);
 
     return (
         <div className="h-full w-full overflow-hidden">
@@ -119,23 +123,18 @@ function DashboardCoordinator() {
                         connect again!"
                     </p>
                     <Button
-                        onClick={handleConnection}
+                        onClick={() => {
+                            localStorage.removeItem("connection");
+                            setConnection(false);
+                        }}
                         type="button"
-                        disabled={connecting}
                         className="h-11 w-full sm:w-44 text-center cursor-pointer disabled:cursor-not-allowed shadow-none 
                         bg-transparent hover:bg-transparent text-white relative -top-4"
                     >
-                        {connecting ? (
-                            <span className="flex items-center gap-2">
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                <p>Processing</p>
-                            </span>
-                        ) : (
-                            <span className="flex items-center gap-2">
-                                <Link className="w-5 h-5" />
-                                <p>Connect</p>
-                            </span>
-                        )}
+                        <span className="flex items-center gap-2">
+                            <ChevronLeft className="w-5 h-5" />
+                            <p>Connect</p>
+                        </span>
                     </Button>
                 </div>
             )}

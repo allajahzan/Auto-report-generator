@@ -116,6 +116,9 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
         if (error.current) error.current.innerHTML = "";
 
+        // Restore
+        localStorage.setItem("phoneNumber", phoneNumber);
+
         setSubmiting(true);
 
         submitGroupAndParticipants(
@@ -153,8 +156,9 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
             resultSubmitGroupAndParticipants((status: boolean) => {
                 setSubmiting(status);
                 if (status) {
-                    // Auth states
                     setOpen(false);
+
+                    // Auth states
                     localStorage.setItem("connection", "1");
                     setConnection(true);
                     localStorage.setItem("groupId", selectedGroup?.id as string);
@@ -162,7 +166,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
                     setNotification({
                         id: Date.now().toString(),
-                        message: "You have successfully selected the group 🎉",
+                        message: "You have successfully selected the group ✌️",
                     });
 
                     navigate(`/${phoneNumber}/${selectedGroup?.id}`);

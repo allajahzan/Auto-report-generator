@@ -4,6 +4,7 @@ import { startSocket } from "../bot/baileys";
 import { getSocket } from "../bot/socket-store";
 import { BatchRepository } from "../repository/implementation/batchRepository";
 import Batch from "../model/batchSchema";
+import { scheduleAudioTaskReport } from "../job/audio-task-report";
 
 // io instance
 let io: Server;
@@ -26,11 +27,13 @@ export const connectSocketIO = (server: http.Server) => {
 
             // Refresh socket
             socket.on("refresh-socket", (phoneNumber: string) => {
+                console.log(phoneNumber);
+                console.log("refresh-socket:", phoneNumber);
                 activeUsers[phoneNumber] = socket.id;
             });
 
             // Get started
-            socket.on("get-started", (phoneNumber: string) => {
+            socket.on("get-started", async (phoneNumber: string) => {
                 try {
                     activeUsers[phoneNumber] = socket.id;
                     console.log(phoneNumber + " get started with id " + socket.id);
@@ -178,6 +181,9 @@ export const connectSocketIO = (server: http.Server) => {
                         }
 
                         io.to(socket.id).emit("submit-group-and-participants-result", true);
+
+                        // Schedule audio task report
+                        scheduleAudioTaskReport(phoneNumber, sock);
                     } catch (err) {
                         io.to(socket.id).emit(
                             "bot-status",

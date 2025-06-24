@@ -5,7 +5,13 @@ import { Link, Loader2, Phone, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import QRCode from "react-qr-code";
-import { botStatus, groupList, getQRcode, getStarted } from "@/socket/io";
+import {
+    botStatus,
+    groupList,
+    getQRcode,
+    getStarted,
+    socket,
+} from "@/socket/io";
 import SelectGroupModal, { type IGroup } from "./modal-select-group";
 import { useNotification } from "@/context/notification-context";
 import { useAuth } from "@/context/auth-context";
@@ -17,13 +23,7 @@ function GetStarted() {
     const [groups, setGroups] = useState<IGroup[] | []>([]);
 
     // Auth context
-    const {
-        phoneNumber: phn,
-        setPhoneNumber,
-        setConnection,
-        groupId,
-        setGroupId,
-    } = useAuth();
+    const { phoneNumber: phn, setPhoneNumber, setConnection } = useAuth();
 
     // Phone number
     const phoneNumber = useRef<string>(phn);
@@ -54,7 +54,7 @@ function GetStarted() {
         // Emit event to get started
         getStarted(phoneNumber.current);
 
-        // Store phone number
+        // Set phone number
         localStorage.setItem("phoneNumber", phoneNumber.current);
         setPhoneNumber(phoneNumber.current);
 
@@ -81,11 +81,10 @@ function GetStarted() {
 
     // Listen for BOT status
     useEffect(() => {
-        botStatus((status, message) => {
-            if (status === "connected" && groupId) {
+        const handleBotStatus = (status: string, message: string) => {
+            if (status === "connected" && localStorage.getItem("groupId")) {
                 localStorage.setItem("connection", "1");
                 setConnection(true);
-
                 setLoading(false);
             } else if (
                 status === "expired" ||
@@ -95,28 +94,27 @@ function GetStarted() {
                 // Reset states
                 localStorage.removeItem("qr");
                 setQr("");
-
                 setLoading(false);
-
-                // Remove auth states
-                localStorage.removeItem("phoneNumber");
-                setPhoneNumber("");
-                localStorage.removeItem("connection");
-                setConnection(false);
-                localStorage.removeItem("groupId");
-                setGroupId("");
+                setOpen(false);
             }
 
             setNotification({
                 id: Date.now().toString(),
                 message,
             });
-        });
+        };
+
+        botStatus(handleBotStatus);
+
+        //  Clean up
+        return () => {
+            socket.off("bot-status", handleBotStatus);
+        };
     }, []);
 
     // Listen for group list
     useEffect(() => {
-        if (!groupId) {
+        if (!localStorage.getItem("groupId")) {
             groupList((grplist) => {
                 setGroups(grplist);
 
@@ -128,7 +126,7 @@ function GetStarted() {
                 setLoading(false);
             });
         }
-    }, [groupId]);
+    }, [localStorage.getItem("groupId")]);
 
     return (
         <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-0 p-5 overflow-auto no-scrollbar">
