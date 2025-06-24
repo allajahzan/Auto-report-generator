@@ -30,9 +30,13 @@ export const useAuth = () => {
 
 // Auth context provider
 export function AuthContextProvider({ children }: { children: ReactNode }) {
-    const [connection, setConnection] = useState<boolean>(
-        localStorage.getItem("connection") === "1"
-    );
+    const [connection, setConnection] = useState<boolean>(() => {
+        const isConnected = localStorage.getItem("connection") === "1";
+        const hasPhoneNumber = !!localStorage.getItem("phoneNumber");
+        const hasGroupId = !!localStorage.getItem("groupId");
+
+        return isConnected && hasPhoneNumber && hasGroupId;
+    });
 
     const [phoneNumber, setPhoneNumber] = useState<string>(
         localStorage.getItem("phoneNumber") || ""
@@ -42,25 +46,13 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         localStorage.getItem("groupId") || ""
     );
 
-    // Emit an event refresh socket when page reload
+    // Emit event to refresh socket
     useEffect(() => {
-        const handleLoad = () => {
-            const navType = performance.getEntriesByType(
-                "navigation"
-            )[0] as PerformanceNavigationTiming;
+        const phoneNumber = localStorage.getItem("phoneNumber");
 
-            if (navType?.type === "reload") {
-                if (phoneNumber) {
-                    refreshSocket(phoneNumber);
-                }
-            }
-        };
-
-        window.addEventListener("load", handleLoad);
-
-        return () => {
-            window.removeEventListener("load", handleLoad);
-        };
+        if (phoneNumber) {
+            refreshSocket(phoneNumber);
+        }
     }, []);
 
     return (

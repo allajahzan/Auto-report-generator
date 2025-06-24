@@ -2,7 +2,7 @@ import type { IGroup } from "@/components/auth/modal-select-group";
 import { BASE_URL } from "@/constants/base-url";
 import io from "socket.io-client";
 
-const socket = io(BASE_URL);
+export const socket = io(BASE_URL);
 
 // Emit to refresh socket
 export const refreshSocket = (phoneNumber: string) => {
@@ -36,7 +36,7 @@ export const getQRcode = (callback: (qrCode: string) => void) => {
 // Listen for Bot status
 export const botStatus = (
     callback: (
-        status: "connected" | "re-connect" | "disconnected" | "expired" | "error",
+        status: "connected" | "disconnected" | "expired" | "error",
         message: string
     ) => void
 ) => {
