@@ -8,6 +8,7 @@ export interface IBatchDto {
         name: string;
         phoneNumber: string;
         profilePic: string;
+        role: string;
     }[];
     createdAt: Date;
 }

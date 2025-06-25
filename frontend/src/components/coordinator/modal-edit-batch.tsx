@@ -95,17 +95,20 @@ function EditBatchModal({ children, batchName }: PropsType) {
     // Handle error
     useEffect(() => {
         if (error) {
-            console.log(error);
+            const message = (error as any)?.response?.data?.errors?.message
+            const status = (error as any)?.status;
 
-            if ((error as any).status === 403) {
+            if (status === 403) {
                 setOpen(false);
                 notify("Connection to Report Buddy is lost ⛓️‍💥");
 
                 localStorage.removeItem("connection");
                 setConnection(false);
-            } else if ((error as any).status === 401) {
+            } else if (status === 401) {
                 notify("You are not authorized to access this page 🚫");
                 clearAuth();
+            } else if (status >= 400 && status < 500) {
+                notify(`${message}, try again later 🤥`);
             } else {
                 notify("Something went wrong, try again later 🤥");
             }

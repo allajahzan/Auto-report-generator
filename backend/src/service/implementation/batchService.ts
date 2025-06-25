@@ -1,6 +1,7 @@
 import { IBatchService } from "../interface/IBatchService";
 import { IBatchRepository } from "../../repository/interface/IBatchRepository";
 import {
+    BadRequestError,
     ForbiddenError,
     NotFoundError,
     UnauthorizedError,
@@ -8,6 +9,7 @@ import {
 import { getSocket } from "../../bot/socket-store";
 import { IBatchDto } from "../../dto/batchDto";
 import fs from "fs";
+import { IBatchSchema } from "../../entities/IBatchSchema";
 
 // Implementation for Batch Service
 export class BatchService implements IBatchService {
@@ -17,6 +19,7 @@ export class BatchService implements IBatchService {
         this.batchRepository = batchRepository;
     }
 
+    // Get batch
     async getBatch(groupId: string, coordinatorId: string): Promise<IBatchDto> {
         try {
             const batch = await this.batchRepository.findOne({
@@ -24,7 +27,7 @@ export class BatchService implements IBatchService {
                 coordinatorId,
             });
 
-            if (!batch) throw new NotFoundError("Batch not found !");
+            if (!batch) throw new NotFoundError("Batch not found");
 
             const phoneNumber = coordinatorId;
 
@@ -35,7 +38,7 @@ export class BatchService implements IBatchService {
                 !fs.existsSync(auth_info_dir) ||
                 fs.readdirSync(auth_info_dir).length === 0
             ) {
-                throw new UnauthorizedError("auth_info not found or is empty!");
+                throw new UnauthorizedError("Session not found");
             }
 
             const sock = getSocket(phoneNumber);
@@ -63,6 +66,7 @@ export class BatchService implements IBatchService {
                             name: p.name,
                             phoneNumber: p.phoneNumber,
                             profilePic: profilePic,
+                            role: p.role
                         };
                     })
                 ),
@@ -70,6 +74,76 @@ export class BatchService implements IBatchService {
             };
 
             return batchDto;
+        } catch (err: unknown) {
+            throw err;
+        }
+    }
+
+    // Update batch details
+    async updateBatchDetails(
+        groupId: string,
+        coordinatorId: string,
+        data: Partial<IBatchSchema>
+    ): Promise<void> {
+        try {
+            const batch = await this.batchRepository.findOne({
+                groupId,
+                coordinatorId,
+            });
+
+            if (!batch) throw new NotFoundError("Batch not found");
+
+            const updatedBatch = await this.batchRepository.update(
+                { coordinatorId, groupId },
+                { $set: data }
+            );
+
+            if (!updatedBatch)
+                throw new BadRequestError("Failed to update batch name");
+        } catch (err: unknown) {
+            throw err;
+        }
+    }
+
+    // Update particiapants
+    async updateParicipants(
+        groupId: string,
+        coordinatorId: string,
+        participant: {
+            id: string;
+            name: string;
+            phoneNumber: string;
+            role: string;
+        }
+    ): Promise<void> {
+        try {
+            const batch = await this.batchRepository.findOne({
+                groupId,
+                coordinatorId,
+            });
+
+            if (!batch) throw new NotFoundError("Batch not found");
+
+            const updatedBatch = await this.batchRepository.update(
+                {
+                    coordinatorId,
+                    groupId,
+                    "participants.id": participant.id,
+                },
+                {
+                    $set: {
+                        "participants.$.name": participant.name,
+                        "participants.$.phoneNumber": participant.phoneNumber,
+                        "participants.$.role": participant.role,
+                    },
+                },
+                {
+                    new: true,
+                }
+            );
+
+            if (!updatedBatch)
+                throw new BadRequestError("Failed to update participant's details");
         } catch (err: unknown) {
             throw err;
         }

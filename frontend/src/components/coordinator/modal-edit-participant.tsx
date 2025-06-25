@@ -29,6 +29,7 @@ import {
     type FormTypeParticipant,
 } from "@/validations/update-participant";
 import ValidationError from "../common/validation-error";
+import { useParams } from "react-router-dom";
 // Interface for Props
 interface PropsType {
     open: boolean;
@@ -44,6 +45,11 @@ interface PropsType {
 
 // Edit participants Modal
 function EditParticipantModal({ open, setOpen, data }: PropsType) {
+    // Params
+    const params = useParams();
+    const phoneNumber = params.phoneNumber;
+    const groupId = params.groupId;
+
     // Participant role
     const [prole, setProle] = useState<string>("");
 
@@ -92,10 +98,15 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
             role: string;
         }) => {
             // Send request
-            const resp = await patchData(API_END_POINTS.PARTICIPANT, payload);
+            const resp = await patchData(
+                API_END_POINTS.PARTICIPANT +
+                `?groupId=${groupId}&coordinatorId=${phoneNumber}`,
+                payload
+            );
 
             // Success response
             if (resp && resp.status === 200) {
+                setOpen(false);
                 return resp.data?.data;
             }
         },
@@ -116,23 +127,28 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
                 pnumber: data.phoneNumber,
                 prole: data.role,
             });
+
+            setProle(data.role);
         }
     }, [open, data]);
 
     // Handle errors
     useEffect(() => {
         if (error) {
-            console.log(error);
+            const message = (error as any)?.response?.data?.errors?.message;
+            const status = (error as any)?.status;
 
-            if ((error as any).status === 403) {
+            if (status === 403) {
                 setOpen(false);
                 notify("Connection to Report Buddy is lost ⛓️‍💥");
 
                 localStorage.removeItem("connection");
                 setConnection(false);
-            } else if ((error as any).status === 401) {
+            } else if (status === 401) {
                 notify("You are not authorized to access this page 🚫");
                 clearAuth();
+            } else if (status >= 400 && status < 500) {
+                notify(`${message}, try again later 🤥`);
             } else {
                 notify("Something went wrong, try again later 🤥");
             }
@@ -201,14 +217,13 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
                             Role
                         </Label>
                         <Select
-                            value={prole}
+                            defaultValue={prole}
                             onValueChange={(value) => {
                                 setProle(value);
                                 setValue("prole", value);
                             }}
                         >
                             <SelectTrigger
-                                {...register("prole")}
                                 id="role"
                                 className="relative w-full text-white text-sm font-medium p-5 pl-9 
                                 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-light cursor-pointer"

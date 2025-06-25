@@ -16,4 +16,14 @@ router.get("/", async (req, res, next) => {
     qrController.getBatch(req, res, next);
 });
 
+// Update batch details
+router.patch("/", async (req, res, next) => {
+    qrController.updateBatchDetails(req, res, next);
+});
+
+// Update particiapants details
+router.patch("/participant", async (req, res, next) => {
+    qrController.updateParicipants(req, res, next);
+});
+
 export { router as batchRoute };

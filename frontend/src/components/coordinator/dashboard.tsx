@@ -137,7 +137,7 @@ function DashboardCoordinator() {
                         <div className="flex justify-between">
                             <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
                                 <span className="text-yellow-600 text-2xl sm:text-3xl">
-                                    {data.batchName}
+                                    {data.batchName.toUpperCase()}
                                 </span>{" "}
                                 Communication batch
                             </h1>
