@@ -244,7 +244,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
                 {/* Batch details */}
                 {selectedGroup && (
-                    <div className="h-full flex flex-col gap-4 overflow-hidden">
+                    <div className="h-full flex flex-col gap-3 overflow-hidden">
                         {/* Title */}
                         <div
                             onClick={() => {
@@ -260,7 +260,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                         </div>
 
                         {/* Details */}
-                        <div className="h-full flex flex-col gap-3 text-white font-medium overflow-auto no-scrollbar">
+                        <div className="h-full flex flex-col gap-2 text-white font-medium overflow-auto no-scrollbar">
                             {/* Batch name */}
                             <Label
                                 htmlFor="batchname"
@@ -359,27 +359,27 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                 )}
                             </div>
                         </div>
-                    </div>
-                )}
 
-                {/* Submit button */}
-                {selectedGroup && (
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            disabled={submiting || !selectedGroup}
-                            onClick={handleSubmit}
-                            className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
-                        shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
-                        >
-                            {submiting ? (
-                                <div className="flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Processing...
-                                </div>
-                            ) : (
-                                "Submit"
-                            )}
-                        </Button>
+                        {/* Submit button */}
+                        {selectedGroup && (
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    disabled={submiting || !selectedGroup}
+                                    onClick={handleSubmit}
+                                    className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
+                                        shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
+                                >
+                                    {submiting ? (
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Processing...
+                                        </div>
+                                    ) : (
+                                        "Submit"
+                                    )}
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
             </DialogContent>

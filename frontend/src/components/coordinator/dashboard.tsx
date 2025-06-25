@@ -1,17 +1,17 @@
 import API_END_POINTS from "@/constants/api-endpoints";
 import { useNotification } from "@/context/notification-context";
 import { fetchData } from "@/service/api-service";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Calendar,
-    ChevronLeft,
     Dot,
     FileText,
     Pencil,
+    RotateCw,
     Settings2,
     UsersRound,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/auth-context";
@@ -20,6 +20,7 @@ import Loader from "../common/loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import Users from "./users";
 import Settings from "./settings";
+import EditBatchModal from "./modal-edit-batch";
 
 // Dashboard coordinator
 function DashboardCoordinator() {
@@ -28,11 +29,19 @@ function DashboardCoordinator() {
     const phoneNumber = params.phoneNumber;
     const groupId = params.groupId;
 
+    const reloadRef = useRef<HTMLParagraphElement>(null);
+
+    // Query client
+    const queryClient = useQueryClient();
+
     // Auth context
     const { setPhoneNumber, setConnection, setGroupId } = useAuth();
 
     // Notification context
     const { setNotification } = useNotification();
+
+    const notify = (msg: string) =>
+        setNotification({ id: Date.now().toString(), message: msg });
 
     // Clear auth
     const clearAuth = () => {
@@ -57,17 +66,15 @@ function DashboardCoordinator() {
             localStorage.removeItem("connection");
             setConnection(false);
 
-            setNotification({
-                id: Date.now().toString(),
-                message: "You are not authorized to access this page 🚫",
-            });
+            notify("You are not authorized to access this page 🚫");
+
             return false;
         }
         return true;
     };
 
     // useQuery for fetching batch info
-    const { data, error, isError, isLoading } = useQuery({
+    const { data, error, isLoading } = useQuery({
         queryKey: ["batch"],
         queryFn: async () => {
             // Send request
@@ -81,32 +88,40 @@ function DashboardCoordinator() {
                 return resp.data?.data;
             }
         },
-        staleTime: 5000000000,
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: () => {
+            if (checkAuth()) return true;
+            return false;
+        },
         retry: false,
     });
 
     // Handle error
     useEffect(() => {
         if (error) {
+            console.log(error);
+
             if ((error as any).status === 403) {
-                setNotification({
-                    id: Date.now().toString(),
-                    message: "Connection to Report Buddy is lost ⛓️‍💥",
-                });
+                notify("Connection to Report Buddy is lost ⛓️‍💥");
+
+                localStorage.removeItem("connection");
+                setConnection(false);
             } else if (
                 (error as any).status === 401 ||
                 (error as any).status === 404
             ) {
-                setNotification({
-                    id: Date.now().toString(),
-                    message: "You are not authorized to access this page 🚫",
-                });
+                notify("You are not authorized to access this page 🚫");
 
                 clearAuth();
             }
         }
     }, [error]);
+
+    // Clean up
+    useEffect(() => {
+        return () => {
+            queryClient.removeQueries({ queryKey: ["batch"] });
+        };
+    }, []);
 
     return (
         <div className="h-full w-full flex items-center overflow-hidden">
@@ -117,43 +132,39 @@ function DashboardCoordinator() {
                 </div>
             )}
 
-            {/* Forbidden - connection lost */}
-            {isError && (error as any).status === 403 && (
-                <div className="relative w-full h-full flex flex-col items-center justify-center gap-5 p-5">
+            {/* Errors */}
+            {error && (error as any).status !== 403 && (
+                <div className="w-full h-full flex flex-col gap-3 items-center justify-center text-white p-5">
                     <img className="w-24" src={robo} alt="" />
-                    <p className="font-medium text-white text-center text-lg italic relative -top-2">
-                        "You have lost your connection with Report Buddy,
-                        <br />
-                        connect again!"
+                    <p className="font-medium text-center text-lg italic">
+                        "Something went wrong, please try again later!"
                     </p>
                     <Button
                         onClick={() => {
-                            localStorage.removeItem("connection");
-                            setConnection(false);
+                            if (reloadRef.current) {
+                                reloadRef.current.style.rotate = "360deg";
+                                reloadRef.current.style.transition = "0.5s";
+                            }
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 500);
                         }}
                         type="button"
                         className="h-11 w-full sm:w-44 text-center cursor-pointer disabled:cursor-not-allowed shadow-none 
-                        bg-transparent hover:bg-transparent text-white relative -top-4"
+                        bg-transparent hover:bg-transparent text-white"
                     >
                         <span className="flex items-center gap-2">
-                            <ChevronLeft className="w-5 h-5" />
-                            <p>Connect</p>
+                            <p ref={reloadRef}>
+                                <RotateCw className="w-5 h-5" />
+                            </p>
+                            <p>Reload</p>
                         </span>
                     </Button>
                 </div>
             )}
 
-            {/* Other errors */}
-            {isError && (error as any).status !== 403 && (
-                <div className="w-full h-full flex items-center justify-center text-white p-5">
-                    <p className="font-medium text-center text-lg italic">
-                        "Something went wrong, please try again later!"
-                    </p>
-                </div>
-            )}
-
             {/* Dashboard */}
-            {data && (
+            {!error && data && (
                 <div className="w-full max-w-6xl mx-auto h-full flex flex-col gap-5 p-5 sm:p-10 overflow-auto no-scrollbar">
                     {/* Header */}
                     <div className="relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
@@ -166,9 +177,17 @@ function DashboardCoordinator() {
                                 Communication batch
                             </h1>
 
-                            <div className="self-start p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                <Pencil className="w-4 h-4" />
-                            </div>
+                            {/* Modal */}
+                            <EditBatchModal
+                                children={
+                                    <div className="self-start p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
+                                        <Pencil className="w-4 h-4" />
+                                    </div>
+                                }
+                                batchName={data.batchName}
+                                clearAuth={clearAuth}
+                                checkAuth={checkAuth}
+                            />
                         </div>
 
                         {/* Date and paricipants count */}
