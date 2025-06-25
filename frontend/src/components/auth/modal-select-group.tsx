@@ -190,7 +190,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
                 onClick={(e) => e.preventDefault()}
-                className="w-full sm:max-w-xl flex flex-col gap-10 bg-my-bg-light border border-zinc-800 h-[86vh]"
+                className="w-full sm:max-w-xl flex flex-col gap-10 bg-my-bg border border-zinc-800 h-[86vh]"
             >
                 <DialogHeader>
                     <DialogTitle className="text-white text-base flex items-center gap-3 text-start w-[calc(100%-5%)]">
@@ -244,7 +244,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
                 {/* Batch details */}
                 {selectedGroup && (
-                    <div className="h-full flex flex-col gap-4 overflow-hidden">
+                    <div className="h-full flex flex-col gap-3 overflow-hidden">
                         {/* Title */}
                         <div
                             onClick={() => {
@@ -260,7 +260,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                         </div>
 
                         {/* Details */}
-                        <div className="h-full flex flex-col gap-3 text-white font-medium overflow-auto no-scrollbar">
+                        <div className="h-full flex flex-col gap-2 text-white font-medium overflow-auto no-scrollbar">
                             {/* Batch name */}
                             <Label
                                 htmlFor="batchname"
@@ -276,7 +276,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                     defaultValue={batchName.current}
                                     onChange={(e) => (batchName.current = e.target.value)}
                                     placeholder={`Enter batch name`}
-                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-light"
                                 />
                                 <Home className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
                             </div>
@@ -284,7 +284,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                             {/* Error */}
                             <p
                                 ref={error}
-                                className="relative font-medium text-xs text-red-600"
+                                className="relative -top-1 font-medium text-xs text-red-600"
                             ></p>
 
                             {/* Participants */}
@@ -323,7 +323,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                                     value={p.phoneNumber}
                                                     readOnly
                                                     placeholder={`Enter phone number`}
-                                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-light"
                                                 />
                                                 <Phone className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
                                             </div>
@@ -339,7 +339,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                                         handleTextChange(e, "name", p.phoneNumber)
                                                     }
                                                     placeholder={`Enter name`}
-                                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-dark"
+                                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-light"
                                                 />
                                                 <UserRound className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
                                             </div>
@@ -359,27 +359,27 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                 )}
                             </div>
                         </div>
-                    </div>
-                )}
 
-                {/* Submit button */}
-                {selectedGroup && (
-                    <div className="flex justify-end gap-2">
-                        <Button
-                            disabled={submiting || !selectedGroup}
-                            onClick={handleSubmit}
-                            className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
-                        shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
-                        >
-                            {submiting ? (
-                                <div className="flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    Processing...
-                                </div>
-                            ) : (
-                                "Submit"
-                            )}
-                        </Button>
+                        {/* Submit button */}
+                        {selectedGroup && (
+                            <div className="flex justify-end gap-2">
+                                <Button
+                                    disabled={submiting || !selectedGroup}
+                                    onClick={handleSubmit}
+                                    className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
+                                        shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
+                                >
+                                    {submiting ? (
+                                        <div className="flex items-center gap-2">
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Processing...
+                                        </div>
+                                    ) : (
+                                        "Submit"
+                                    )}
+                                </Button>
+                            </div>
+                        )}
                     </div>
                 )}
             </DialogContent>

@@ -1,22 +1,26 @@
 import API_END_POINTS from "@/constants/api-endpoints";
 import { useNotification } from "@/context/notification-context";
 import { fetchData } from "@/service/api-service";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Calendar,
-    ChevronLeft,
     Dot,
+    FileText,
     Pencil,
-    UserRound,
+    RotateCw,
+    Settings2,
     UsersRound,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "../ui/button";
 import { useAuth } from "@/context/auth-context";
-import NameCard from "../common/name-card";
 import robo from "@/assets/images/student.png";
 import Loader from "../common/loader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import Users from "./users";
+import Settings from "./settings";
+import EditBatchModal from "./modal-edit-batch";
 
 // Dashboard coordinator
 function DashboardCoordinator() {
@@ -25,46 +29,19 @@ function DashboardCoordinator() {
     const phoneNumber = params.phoneNumber;
     const groupId = params.groupId;
 
+    const reloadRef = useRef<HTMLParagraphElement>(null);
+
+    // Query client
+    const queryClient = useQueryClient();
+
     // Auth context
-    const { setPhoneNumber, setConnection, setGroupId } = useAuth();
+    const { setConnection, checkAuth, clearAuth } = useAuth();
 
     // Notification context
-    const { setNotification } = useNotification();
-
-    // Clear auth
-    const clearAuth = () => {
-        localStorage.removeItem("phoneNumber");
-        setPhoneNumber("");
-        localStorage.removeItem("connection");
-        setConnection(false);
-        localStorage.removeItem("groupId");
-        setGroupId("");
-    };
-
-    // Check auth
-    const checkAuth = () => {
-        const phoneNumber = localStorage.getItem("phoneNumber");
-        const connection = localStorage.getItem("connection");
-        const groupId = localStorage.getItem("groupId");
-
-        if (!phoneNumber || !connection || !groupId) {
-            if (!phoneNumber) setPhoneNumber("");
-            if (!groupId) setGroupId("");
-
-            localStorage.removeItem("connection");
-            setConnection(false);
-
-            setNotification({
-                id: Date.now().toString(),
-                message: "You are not authorized to access this page 🚫",
-            });
-            return false;
-        }
-        return true;
-    };
+    const { notify } = useNotification();
 
     // useQuery for fetching batch info
-    const { data, error, isError, isLoading } = useQuery({
+    const { data, error, isLoading } = useQuery({
         queryKey: ["batch"],
         queryFn: async () => {
             // Send request
@@ -78,93 +55,102 @@ function DashboardCoordinator() {
                 return resp.data?.data;
             }
         },
-        refetchOnWindowFocus: true,
+        refetchOnWindowFocus: () => {
+            if (checkAuth()) return true;
+            return false;
+        },
         retry: false,
     });
 
     // Handle error
     useEffect(() => {
         if (error) {
-            if ((error as any).status === 403) {
-                setNotification({
-                    id: Date.now().toString(),
-                    message: "Connection to Report Buddy is lost ⛓️‍💥",
-                });
-            } else if (
-                (error as any).status === 401 ||
-                (error as any).status === 404
-            ) {
-                setNotification({
-                    id: Date.now().toString(),
-                    message: "You are not authorized to access this page 🚫",
-                });
+            console.log(error);
 
+            if ((error as any).status === 403) {
+                notify("Connection to Report Buddy is lost ⛓️‍💥");
+
+                localStorage.removeItem("connection");
+                setConnection(false);
+            } else if ((error as any).status === 401) {
+                notify("You are not authorized to access this page 🚫");
                 clearAuth();
+            } else {
+                notify("Something went wrong, try again later 🤥");
             }
         }
     }, [error]);
 
+    // Clean up
+    useEffect(() => {
+        return () => {
+            queryClient.removeQueries({ queryKey: ["batch"] });
+        };
+    }, []);
+
     return (
-        <div className="h-full w-full overflow-hidden">
+        <div className="h-full w-full flex items-center overflow-hidden">
             {/* Loader */}
             {isLoading && (
-                <div className="h-full flex items-center justify-center p-5">
+                <div className="w-full h-full flex items-center justify-center p-5">
                     <Loader />
                 </div>
             )}
 
-            {/* Forbidden - connection lost */}
-            {isError && (error as any).status === 403 && (
-                <div className="relative h-full flex flex-col items-center justify-center gap-5 p-5">
+            {/* Errors */}
+            {error && (error as any).status !== 403 && (
+                <div className="w-full h-full flex flex-col gap-3 items-center justify-center text-white p-5">
                     <img className="w-24" src={robo} alt="" />
-                    <p className="font-medium text-white text-center text-lg italic relative -top-2">
-                        "You have lost your connection with Report Buddy,
-                        <br />
-                        connect again!"
+                    <p className="font-medium text-center text-lg italic">
+                        "Something went wrong, please try again later!"
                     </p>
                     <Button
                         onClick={() => {
-                            localStorage.removeItem("connection");
-                            setConnection(false);
+                            if (reloadRef.current) {
+                                reloadRef.current.style.rotate = "360deg";
+                                reloadRef.current.style.transition = "0.5s";
+                            }
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 500);
                         }}
                         type="button"
                         className="h-11 w-full sm:w-44 text-center cursor-pointer disabled:cursor-not-allowed shadow-none 
-                        bg-transparent hover:bg-transparent text-white relative -top-4"
+                        bg-transparent hover:bg-transparent text-white"
                     >
                         <span className="flex items-center gap-2">
-                            <ChevronLeft className="w-5 h-5" />
-                            <p>Connect</p>
+                            <p ref={reloadRef}>
+                                <RotateCw className="w-5 h-5" />
+                            </p>
+                            <p>Reload</p>
                         </span>
                     </Button>
                 </div>
             )}
 
-            {/* Other errors */}
-            {isError && (error as any).status !== 403 && (
-                <div className="h-full flex items-center justify-center text-white p-5">
-                    <p className="font-medium text-center text-lg italic">
-                        "Something went wrong, please try again later!"
-                    </p>
-                </div>
-            )}
-
             {/* Dashboard */}
-            {data && (
+            {!error && data && (
                 <div className="w-full max-w-6xl mx-auto h-full flex flex-col gap-5 p-5 sm:p-10 overflow-auto no-scrollbar">
                     {/* Header */}
-                    <div className=" relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
+                    <div className="relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
                         {/* Batch name */}
                         <div className="flex justify-between">
                             <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
-                                <span className="text-white text-2xl sm:text-3xl">
+                                <span className="text-yellow-600 text-2xl sm:text-3xl">
                                     {data.batchName}
                                 </span>{" "}
                                 Communication batch
                             </h1>
 
-                            <div className="self-start p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                <Pencil className="w-4 h-4" />
-                            </div>
+                            {/* Modal */}
+                            <EditBatchModal
+                                children={
+                                    <div className="self-start p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
+                                        <Pencil className="w-4 h-4" />
+                                    </div>
+                                }
+                                batchName={data.batchName}
+                            />
                         </div>
 
                         {/* Date and paricipants count */}
@@ -187,64 +173,44 @@ function DashboardCoordinator() {
                         </div>
                     </div>
 
-                    {/* Coordinator */}
-                    <div className=" relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
-                        {/* Title */}
-                        <div className="flex justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
-                                    <UserRound className="w-4 h-4" />
-                                </div>
-                                <h1 className="text-lg font-extrabold text-white tracking-wide">
-                                    Batch Coordinator
-                                </h1>
-                            </div>
+                    {/* Tabs */}
+                    <Tabs defaultValue="users" className="w-full">
+                        <TabsList className="bg-my-bg-light text-white p-2 py-6 w-full sm:w-fit">
+                            <TabsTrigger
+                                className="text-white px-4 py-4 cursor-pointer"
+                                value="users"
+                            >
+                                <UsersRound /> Users
+                            </TabsTrigger>
 
-                            <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                <Pencil className="w-4 h-4" />
-                            </div>
-                        </div>
+                            <TabsTrigger
+                                className="text-white px-4 py-4 cursor-pointer"
+                                value="reports"
+                            >
+                                <FileText /> Reports
+                            </TabsTrigger>
 
-                        {/* Name and details */}
-                        <div className="flex flex-col gap-5 p-3 bg-my-bg-dark rounded-lg shadow">
-                            <NameCard
-                                data={data.participants.find(
-                                    (p: any) => p.phoneNumber === data.coordinatorId
-                                )}
-                            />
-                        </div>
-                    </div>
+                            <TabsTrigger
+                                className="text-white px-4 py-4 cursor-pointer"
+                                value="settings"
+                            >
+                                <Settings2 /> Settings
+                            </TabsTrigger>
+                        </TabsList>
 
-                    {/* Participants */}
-                    <div className=" relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
-                        {/* Title */}
-                        <div className="flex justify-between">
-                            <div className="flex items-center gap-2">
-                                <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
-                                    <UserRound className="w-4 h-4" />
-                                </div>
-                                <h1 className="text-lg font-extrabold text-white tracking-wide">
-                                    Participants
-                                </h1>
-                            </div>
+                        {/* Users side */}
+                        <TabsContent value="users" className="flex flex-col gap-2">
+                            <Users data={data} />
+                        </TabsContent>
 
-                            <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                <Pencil className="w-4 h-4" />
-                            </div>
-                        </div>
+                        {/* Reports */}
+                        <TabsContent value="reports"></TabsContent>
 
-                        {/* Name and details */}
-                        <div className="flex flex-col gap-2">
-                            {data.participants.map((p: any, index: number) => (
-                                <div
-                                    key={index}
-                                    className="p-3 bg-my-bg-dark rounded-lg shadow"
-                                >
-                                    <NameCard key={p.id} data={p} />
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                        {/* Settings */}
+                        <TabsContent value="settings">
+                            <Settings data={data} />
+                        </TabsContent>
+                    </Tabs>
                 </div>
             )}
         </div>

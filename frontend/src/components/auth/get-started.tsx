@@ -34,7 +34,7 @@ function GetStarted() {
     const [loading, setLoading] = useState<boolean>(false);
 
     // Notificatino context
-    const { setNotification } = useNotification();
+    const { notify } = useNotification();
 
     // Handle get started
     const handleGetStarted = async () => {
@@ -72,10 +72,7 @@ function GetStarted() {
 
             setLoading(false);
 
-            setNotification({
-                id: Date.now().toString(),
-                message: "Scan this QR code, connect to Report Buddy 🔗",
-            });
+            notify("Scan this QR code, connect to Report Buddy 🔗");
         });
     }, []);
 
@@ -98,10 +95,7 @@ function GetStarted() {
                 setOpen(false);
             }
 
-            setNotification({
-                id: Date.now().toString(),
-                message,
-            });
+            notify(message);
         };
 
         botStatus(handleBotStatus);
@@ -181,7 +175,8 @@ function GetStarted() {
                                 autoComplete="off"
                                 defaultValue={phoneNumber.current}
                                 onChange={(e) => (phoneNumber.current = e.target.value)}
-                                className="w-full p-5 pl-9 h-11 text-white text-sm font-medium border-2 border-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 focus:ring-offset-black"
+                                className="w-full p-5 pl-9 h-11 text-white text-sm font-medium border-2 border-zinc-800 hover:border-zinc-700 hover:bg-my-bg focus:outline-none focus:ring-2 
+                                focus:ring-zinc-600 focus:ring-offset-2 focus:ring-offset-black"
                             />
                             <Phone className="w-4 h-4 absolute left-3 top-[14px] text-muted-foreground" />
                         </motion.div>

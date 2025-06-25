@@ -1,17 +1,36 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Phone } from "lucide-react";
+import { Edit, MoreVertical, Phone } from "lucide-react";
 import profile from "@/assets/images/groups.svg";
 import { motion } from "framer-motion";
+import { Badge } from "../ui/badge";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import EditParticipantModal from "../coordinator/modal-edit-participant";
+import { useState } from "react";
 
 // Interface for Props
 interface PropsType {
-    data: { id: string; name: string; phoneNumber: string; profilePic: string };
+    data: {
+        id: string;
+        name: string;
+        phoneNumber: string;
+        role: string;
+        profilePic: string;
+    };
+    isMoreOption: boolean;
 }
 
 // Name card Component
-function NameCard({ data }: PropsType) {
+function NameCard({ data, isMoreOption }: PropsType) {
+    // Edit modal state
+    const [open, setOpen] = useState<boolean>(false);
+
     return (
-        <div className="flex items-center gap-3">
+        <div className="group flex items-center gap-3">
             {/* Avatar profile pic */}
             <motion.div
                 key={data.id}
@@ -26,17 +45,51 @@ function NameCard({ data }: PropsType) {
                     </AvatarFallback>
                 </Avatar>
             </motion.div>
+
+            {/* Name and details */}
             <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
                 <div className="flex items-center gap-2">
                     <p className="text-base text-white font-semibold truncate">
-                        {data.name || "Participant"}
+                        {data.name || "Unknown"}
                     </p>
+                    <Badge className="relative text-[10px] tracking-wider text-white font-medium bg-zinc-800 group-hover:bg-zinc-700 hover:bg-zinc-700 rounded-full overflow-hidden shadow">
+                        {data.role || "Paricipant"}
+                    </Badge>
                 </div>
-                <p className="text-xs text-white font-medium tracking-wide flex items-center gap-1 w-full truncate">
-                    <Phone className="w-3 h-3 flex-shrink-0" />
-                    {data.phoneNumber}
+                <p className="text-xs text-white font-medium tracking-wide flex items-center w-full truncate">
+                    <span className="flex items-center gap-1">
+                        <Phone className="w-3 h-3 shrink-0" />
+                        {data.phoneNumber}
+                    </span>
                 </p>
             </div>
+
+            {/* More */}
+            {isMoreOption && (
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild className="cursor-pointer">
+                        <div className="p-2">
+                            <MoreVertical className="w-4 h-4 text-white" />
+                        </div>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-my-bg-light border border-zinc-800"
+                        align="end"
+                    >
+                        <DropdownMenuItem
+                            onClick={() => setOpen(true)}
+                            className="text-white bg-my-bg-light hover:bg-my-bg-dark cursor-pointer"
+                        >
+                            <Edit className="w-4 h-5" />
+                            Edit
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            )}
+
+            {/* Edit participant modal */}
+            <EditParticipantModal open={open} setOpen={setOpen} data={data} />
         </div>
     );
 }

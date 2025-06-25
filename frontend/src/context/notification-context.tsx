@@ -17,7 +17,7 @@ interface INotification {
 
 // Interface for Notification context
 export interface INotificationContext {
-    setNotification: (notificaion: INotification) => void;
+    notify: (msg: string) => void;
 }
 
 const NotificationContext = createContext<INotificationContext | null>(null);
@@ -37,6 +37,9 @@ function NotificationContextProvider({ children }: { children: ReactNode }) {
 
     const [notification, setNotification] = useState<INotification | null>(null);
 
+    const notify = (msg: string) =>
+        setNotification({ id: Date.now().toString(), message: msg });
+
     // Show notfication
     useEffect(() => {
         if (notification) {
@@ -48,7 +51,7 @@ function NotificationContextProvider({ children }: { children: ReactNode }) {
     }, [notification?.id]);
 
     return (
-        <NotificationContext.Provider value={{ setNotification }}>
+        <NotificationContext.Provider value={{ notify }}>
             {children}
         </NotificationContext.Provider>
     );
