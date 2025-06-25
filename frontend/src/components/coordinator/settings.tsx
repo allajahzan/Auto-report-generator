@@ -1,7 +1,8 @@
 import type { IBatch } from "@/types/batch";
-import { Activity, Clock, Settings2 } from "lucide-react";
+import { Activity, FileClock, Settings2, Trash } from "lucide-react";
 import { Switch } from "../ui/switch";
 import { useState } from "react";
+import { Button } from "../ui/button";
 
 // Interface for props
 interface PropsType {
@@ -52,7 +53,7 @@ function Settings({ data }: PropsType) {
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
                         <h1 className="font-semibold text-sm text-white">
-                            Enable WhatsApp Group Tracking
+                            WhatsApp Group Tracking
                         </h1>
                         <p className="font-medium text-xs text-muted-foreground">
                             Track the selected WhatsApp group for audio task submissions.
@@ -69,11 +70,11 @@ function Settings({ data }: PropsType) {
                 {/* Enable schedule */}
                 <div className="p-3 flex items-center gap-3 bg-my-bg-dark rounded-lg shadow">
                     <div className="p-3.5 rounded-sm bg-zinc-800 text-white">
-                        <Clock className="w-5 h-5" />
+                        <FileClock className="w-5 h-5" />
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
                         <h1 className="font-semibold text-sm text-white">
-                            Enable Audio Task Report Sharing
+                            Audio Task Report Sharing
                         </h1>
                         <p className="font-medium text-xs text-muted-foreground">
                             Automatically share audio task reports at scheduled times.
@@ -85,6 +86,25 @@ function Settings({ data }: PropsType) {
                         checked={enableSharing}
                         onCheckedChange={() => handleToggleButton("sharing")}
                     />
+                </div>
+
+                {/* Disconnect & Delete account */}
+                <div className="p-3 flex items-center gap-3 bg-my-bg-dark rounded-lg shadow">
+                    <div className="p-3.5 rounded-sm bg-red-600/20 text-red-600">
+                        <Trash className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 flex flex-col gap-1">
+                        <h1 className="font-semibold text-sm text-white">
+                            Disconnect & Delete Account
+                        </h1>
+                        <p className="font-medium text-xs text-muted-foreground">
+                            Disconnect from Report Buddy and delete your account, along with
+                            all the reports
+                        </p>
+                    </div>
+                    <Button className="border border-red-600 text-red-600 hover:bg-red-600/20 cursor-pointer">
+                        Delete
+                    </Button>
                 </div>
             </div>
         </div>

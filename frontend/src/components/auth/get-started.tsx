@@ -181,7 +181,8 @@ function GetStarted() {
                                 autoComplete="off"
                                 defaultValue={phoneNumber.current}
                                 onChange={(e) => (phoneNumber.current = e.target.value)}
-                                className="w-full p-5 pl-9 h-11 text-white text-sm font-medium border-2 border-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-700 focus:ring-offset-2 focus:ring-offset-black"
+                                className="w-full p-5 pl-9 h-11 text-white text-sm font-medium border-2 border-zinc-800 hover:border-zinc-700 hover:bg-my-bg focus:outline-none focus:ring-2 
+                                focus:ring-zinc-600 focus:ring-offset-2 focus:ring-offset-black"
                             />
                             <Phone className="w-4 h-4 absolute left-3 top-[14px] text-muted-foreground" />
                         </motion.div>

@@ -6,6 +6,7 @@ import {
     Calendar,
     ChevronLeft,
     Dot,
+    FileText,
     Pencil,
     Settings2,
     UsersRound,
@@ -80,6 +81,7 @@ function DashboardCoordinator() {
                 return resp.data?.data;
             }
         },
+        staleTime: 5000000000,
         refetchOnWindowFocus: false,
         retry: false,
     });
@@ -158,7 +160,7 @@ function DashboardCoordinator() {
                         {/* Batch name */}
                         <div className="flex justify-between">
                             <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
-                                <span className="text-white text-2xl sm:text-3xl">
+                                <span className="text-yellow-600 text-2xl sm:text-3xl">
                                     {data.batchName}
                                 </span>{" "}
                                 Communication batch
@@ -191,12 +193,19 @@ function DashboardCoordinator() {
 
                     {/* Tabs */}
                     <Tabs defaultValue="users" className="w-full">
-                        <TabsList className="bg-my-bg-light text-white flex gap-1 p-2 py-6">
+                        <TabsList className="bg-my-bg-light text-white p-2 py-6">
                             <TabsTrigger
                                 className="text-white px-4 py-4 cursor-pointer"
                                 value="users"
                             >
                                 <UsersRound /> Users
+                            </TabsTrigger>
+
+                            <TabsTrigger
+                                className="text-white px-4 py-4 cursor-pointer"
+                                value="reports"
+                            >
+                                <FileText /> Reports
                             </TabsTrigger>
 
                             <TabsTrigger
@@ -211,6 +220,9 @@ function DashboardCoordinator() {
                         <TabsContent value="users" className="flex flex-col gap-5">
                             <Users data={data} />
                         </TabsContent>
+
+                        {/* Reports */}
+                        <TabsContent value="reports"></TabsContent>
 
                         {/* Settings */}
                         <TabsContent value="settings">

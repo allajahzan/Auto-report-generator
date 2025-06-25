@@ -28,7 +28,7 @@ function GroupList({
             transition={{ delay: 0.2 + index * 0.1 }}
             onClick={() => action()}
             className={cn(
-                "group p-2 px-3 w-full flex flex-col rounded-lg cursor-pointer bg-my-bg-dark shadow-sm",
+                "group p-2 px-3 w-full flex flex-col rounded-lg cursor-pointer bg-my-bg-light hover:bg-my-bg-dark shadow-sm",
                 className,
                 selectedGroup?.id === group.id ? "bg-[#151515]" : ""
             )}
