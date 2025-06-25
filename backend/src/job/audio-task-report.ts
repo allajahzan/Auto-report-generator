@@ -57,7 +57,7 @@ export const scheduleAudioTaskReport = async (
             // Iterate through participants
             for (const p of participants) {
                 // If not student, go next
-                if (p.role !== "student") continue;
+                if (p.role !== "Student") continue;
 
                 const existingReportOfStudent = audioTaskReport.find(
                     (r) => r.phoneNumber === p.phoneNumber

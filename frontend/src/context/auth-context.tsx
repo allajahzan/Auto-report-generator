@@ -6,6 +6,7 @@ import {
     useState,
     type ReactNode,
 } from "react";
+import { useNotification } from "./notification-context";
 
 // Interface for Auth context
 export interface IAuthContext {
@@ -15,6 +16,8 @@ export interface IAuthContext {
     setPhoneNumber: (phoneNumber: string) => void;
     groupId: string;
     setGroupId: (groupId: string) => void;
+    clearAuth: () => void;
+    checkAuth: () => boolean;
 }
 
 const AuthContext = createContext<IAuthContext | null>(null);
@@ -46,6 +49,39 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         localStorage.getItem("groupId") || ""
     );
 
+    // Notification context
+    const { notify } = useNotification();
+
+    // Clear auth
+    const clearAuth = () => {
+        localStorage.removeItem("phoneNumber");
+        setPhoneNumber("");
+        localStorage.removeItem("connection");
+        setConnection(false);
+        localStorage.removeItem("groupId");
+        setGroupId("");
+    };
+
+    // Check auth
+    const checkAuth = () => {
+        const phoneNumber = localStorage.getItem("phoneNumber");
+        const connection = localStorage.getItem("connection");
+        const groupId = localStorage.getItem("groupId");
+
+        if (!phoneNumber || !connection || !groupId) {
+            if (!phoneNumber) setPhoneNumber("");
+            if (!groupId) setGroupId("");
+
+            localStorage.removeItem("connection");
+            setConnection(false);
+
+            notify("You are not authorized to access this page 🚫");
+
+            return false;
+        }
+        return true;
+    };
+
     // Emit event to refresh socket
     useEffect(() => {
         const phoneNumber = localStorage.getItem("phoneNumber");
@@ -64,6 +100,8 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
                 setPhoneNumber,
                 groupId,
                 setGroupId,
+                clearAuth,
+                checkAuth
             }}
         >
             {children}

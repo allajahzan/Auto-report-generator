@@ -27,8 +27,7 @@ export const connectSocketIO = (server: http.Server) => {
 
             // Refresh socket
             socket.on("refresh-socket", (phoneNumber: string) => {
-                console.log(phoneNumber);
-                console.log("refresh-socket:", phoneNumber);
+                console.log("refresh-socket-io:", phoneNumber);
                 activeUsers[phoneNumber] = socket.id;
             });
 
@@ -167,7 +166,7 @@ export const connectSocketIO = (server: http.Server) => {
                         });
 
                         if (!batch) {
-                            return fn1(socket, "not-found", "Something went wrong 🤥");
+                            return fn1(socket, "not-found", "Something went wrong, try again later 🤥");
                         }
 
                         const updatedBatch = await batchRepository.update(
@@ -177,7 +176,7 @@ export const connectSocketIO = (server: http.Server) => {
                         );
 
                         if (!updatedBatch) {
-                            return fn1(socket, "update-failed", "Something went wrong 🤥");
+                            return fn1(socket, "update-failed", "Something went wrong, try again later 🤥");
                         }
 
                         io.to(socket.id).emit("submit-group-and-participants-result", true);
@@ -188,7 +187,7 @@ export const connectSocketIO = (server: http.Server) => {
                         io.to(socket.id).emit(
                             "bot-status",
                             "error",
-                            "Something went wrong 🤥"
+                            "Something went wrong, try again later 🤥"
                         );
                     }
                 }

@@ -22,17 +22,10 @@ import { useAuth } from "@/context/auth-context";
 interface PropsType {
     children: ReactNode;
     batchName: string;
-    clearAuth: () => void;
-    checkAuth: () => boolean;
 }
 
 // Edit batch modal Component
-function EditBatchModal({
-    children,
-    batchName,
-    clearAuth,
-    checkAuth,
-}: PropsType) {
+function EditBatchModal({ children, batchName }: PropsType) {
     // Modal states
     const [open, setOpen] = useState<boolean>(false);
 
@@ -49,13 +42,10 @@ function EditBatchModal({
     const queryClient = useQueryClient();
 
     // Auth context
-    const { setConnection } = useAuth();
+    const { setConnection, checkAuth, clearAuth } = useAuth();
 
     // Notification context
-    const { setNotification } = useNotification();
-
-    const notify = (msg: string) =>
-        setNotification({ id: Date.now().toString(), message: msg });
+    const { notify } = useNotification();
 
     // useQuery for updating batch info
     const { isLoading, error, refetch } = useQuery({
@@ -108,12 +98,11 @@ function EditBatchModal({
 
                 localStorage.removeItem("connection");
                 setConnection(false);
-            } else if (
-                (error as any).status === 401 ||
-                (error as any).status === 404
-            ) {
+            } else if ((error as any).status === 401) {
                 notify("You are not authorized to access this page 🚫");
                 clearAuth();
+            } else {
+                notify("Something went wrong, try again later 🤥");
             }
         }
     }, [error]);
@@ -130,11 +119,11 @@ function EditBatchModal({
             <DialogTrigger>{children}</DialogTrigger>
             <DialogContent
                 onClick={(e) => e.preventDefault()}
-                className="w-full sm:max-w-xl flex flex-col gap-10 bg-my-bg border border-zinc-800"
+                className="w-full flex flex-col gap-10 bg-my-bg border border-zinc-800"
             >
                 <DialogHeader>
                     <DialogTitle className="text-white text-base flex items-center gap-3 text-start w-[calc(100%-5%)]">
-                        <span> Update batch name.</span>
+                        <span>Update batch name.</span>
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground font-medium text-xs text-start">
                         You can change your batch name here.

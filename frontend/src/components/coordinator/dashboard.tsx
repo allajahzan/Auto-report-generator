@@ -35,43 +35,10 @@ function DashboardCoordinator() {
     const queryClient = useQueryClient();
 
     // Auth context
-    const { setPhoneNumber, setConnection, setGroupId } = useAuth();
+    const { setConnection, checkAuth, clearAuth } = useAuth();
 
     // Notification context
-    const { setNotification } = useNotification();
-
-    const notify = (msg: string) =>
-        setNotification({ id: Date.now().toString(), message: msg });
-
-    // Clear auth
-    const clearAuth = () => {
-        localStorage.removeItem("phoneNumber");
-        setPhoneNumber("");
-        localStorage.removeItem("connection");
-        setConnection(false);
-        localStorage.removeItem("groupId");
-        setGroupId("");
-    };
-
-    // Check auth
-    const checkAuth = () => {
-        const phoneNumber = localStorage.getItem("phoneNumber");
-        const connection = localStorage.getItem("connection");
-        const groupId = localStorage.getItem("groupId");
-
-        if (!phoneNumber || !connection || !groupId) {
-            if (!phoneNumber) setPhoneNumber("");
-            if (!groupId) setGroupId("");
-
-            localStorage.removeItem("connection");
-            setConnection(false);
-
-            notify("You are not authorized to access this page 🚫");
-
-            return false;
-        }
-        return true;
-    };
+    const { notify } = useNotification();
 
     // useQuery for fetching batch info
     const { data, error, isLoading } = useQuery({
@@ -105,13 +72,11 @@ function DashboardCoordinator() {
 
                 localStorage.removeItem("connection");
                 setConnection(false);
-            } else if (
-                (error as any).status === 401 ||
-                (error as any).status === 404
-            ) {
+            } else if ((error as any).status === 401) {
                 notify("You are not authorized to access this page 🚫");
-
                 clearAuth();
+            } else {
+                notify("Something went wrong, try again later 🤥");
             }
         }
     }, [error]);
@@ -185,8 +150,6 @@ function DashboardCoordinator() {
                                     </div>
                                 }
                                 batchName={data.batchName}
-                                clearAuth={clearAuth}
-                                checkAuth={checkAuth}
                             />
                         </div>
 
@@ -212,7 +175,7 @@ function DashboardCoordinator() {
 
                     {/* Tabs */}
                     <Tabs defaultValue="users" className="w-full">
-                        <TabsList className="bg-my-bg-light text-white p-2 py-6">
+                        <TabsList className="bg-my-bg-light text-white p-2 py-6 w-full sm:w-fit">
                             <TabsTrigger
                                 className="text-white px-4 py-4 cursor-pointer"
                                 value="users"
@@ -236,7 +199,7 @@ function DashboardCoordinator() {
                         </TabsList>
 
                         {/* Users side */}
-                        <TabsContent value="users" className="flex flex-col gap-5">
+                        <TabsContent value="users" className="flex flex-col gap-2">
                             <Users data={data} />
                         </TabsContent>
 

@@ -255,8 +255,8 @@ export const startSocket = async (
 
                         // Check with group ID
                         if (isMessageFromGroup && groupIdFromDB === msg.key.remoteJid) {
-                            const msgSender = msg.key.participant;
-                            const sender = batch.participants.find((p) => p.id === msgSender);
+                            const msgSenderId = msg.key.participant;
+                            const sender = batch.participants.find((p) => p.id === msgSenderId);
 
                             if (!sender) return;
 
@@ -268,7 +268,7 @@ export const startSocket = async (
                             );
 
                             // If not student, go next
-                            if (sender.role !== "student") continue;
+                            if (sender.role !== "Student") continue;
 
                             const textMessage =
                                 msg.message?.conversation ||
@@ -464,7 +464,7 @@ export const startSocketOnServerStart = async () => {
 
                 if (!batch || !batch.groupId) return;
 
-                console.log("starting socket:", phoneNumber);
+                console.log("starting BOT:", phoneNumber);
 
                 await startSocket(
                     phoneNumber,
@@ -472,7 +472,7 @@ export const startSocketOnServerStart = async () => {
                     (status, message) => { }
                 );
             } catch (err) {
-                console.error(`Failed to start socket:${phoneNumber}`);
+                console.error(`Failed to start BOT:${phoneNumber}`);
             }
         });
 
@@ -489,7 +489,7 @@ export const startSocketOnServerStart = async () => {
 
                     if (!batch || !batch.groupId) return;
 
-                    console.log(phoneNumber, "refreshing socket:", phoneNumber);
+                    console.log("refreshing BOT:", phoneNumber);
 
                     await startSocket(
                         phoneNumber,
@@ -497,7 +497,7 @@ export const startSocketOnServerStart = async () => {
                         (status, message) => { }
                     );
                 } catch (err) {
-                    console.error(`Failed to refresh socket:${phoneNumber}`);
+                    console.error(`Failed to refresh BOT:${phoneNumber}`);
                 }
             });
 

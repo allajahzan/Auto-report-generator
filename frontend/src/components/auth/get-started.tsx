@@ -34,7 +34,7 @@ function GetStarted() {
     const [loading, setLoading] = useState<boolean>(false);
 
     // Notificatino context
-    const { setNotification } = useNotification();
+    const { notify } = useNotification();
 
     // Handle get started
     const handleGetStarted = async () => {
@@ -72,10 +72,7 @@ function GetStarted() {
 
             setLoading(false);
 
-            setNotification({
-                id: Date.now().toString(),
-                message: "Scan this QR code, connect to Report Buddy 🔗",
-            });
+            notify("Scan this QR code, connect to Report Buddy 🔗");
         });
     }, []);
 
@@ -98,10 +95,7 @@ function GetStarted() {
                 setOpen(false);
             }
 
-            setNotification({
-                id: Date.now().toString(),
-                message,
-            });
+            notify(message);
         };
 
         botStatus(handleBotStatus);

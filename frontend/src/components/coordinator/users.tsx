@@ -1,6 +1,6 @@
 import type { IBatch } from "@/types/batch";
 import NameCard from "../common/name-card";
-import { Pencil, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 
 // Interface for Props
 interface PropsType {
@@ -22,20 +22,18 @@ function Users({ data }: PropsType) {
                             Batch Coordinator
                         </h1>
                     </div>
-
-                    <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                        <Pencil className="w-4 h-4" />
-                    </div>
                 </div>
 
                 {/* Name and details */}
                 <div className="flex flex-col gap-5 p-3 bg-my-bg-dark rounded-lg shadow">
                     <NameCard
-                        data={
-                            data.participants.find(
+                        data={{
+                            ...(data.participants.find(
                                 (p: any) => p.phoneNumber === data.coordinatorId
-                            ) as IBatch["participants"][0]
-                        }
+                            ) as IBatch["participants"][0]),
+                            role: "Coordinator",
+                        }}
+                        isMoreOption={false}
                     />
                 </div>
             </div>
@@ -52,17 +50,13 @@ function Users({ data }: PropsType) {
                             Participants
                         </h1>
                     </div>
-
-                    <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                        <Pencil className="w-4 h-4" />
-                    </div>
                 </div>
 
                 {/* Name and details */}
                 <div className="flex flex-col gap-2">
                     {data.participants.map((p: any, index: number) => (
                         <div key={index} className="p-3 bg-my-bg-dark rounded-lg shadow">
-                            <NameCard key={p.id} data={p} />
+                            <NameCard key={p.id} data={p} isMoreOption={true} />
                         </div>
                     ))}
                 </div>

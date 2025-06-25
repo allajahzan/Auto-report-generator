@@ -48,20 +48,20 @@ function Settings({ data }: PropsType) {
             <div className="flex flex-col gap-2">
                 {/* Enable tracking */}
                 <div className="p-3 flex items-center gap-3 bg-my-bg-dark rounded-lg shadow">
-                    <div className="p-3.5 rounded-sm bg-zinc-800 text-white">
+                    <div className="self-start sm:self-center p-3.5 rounded-sm bg-zinc-800 text-white">
                         <Activity className="w-5 h-5" />
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
                         <h1 className="font-semibold text-sm text-white">
-                            WhatsApp Group Tracking
+                            WA Group Tracking
                         </h1>
                         <p className="font-medium text-xs text-muted-foreground">
-                            Track the selected WhatsApp group for audio task submissions.
+                            Track the selected WA group for audio task submissions.
                         </p>
                     </div>
                     <Switch
                         id="enable-tracking"
-                        className="relative right-2"
+                        className="self-start sm:self-center"
                         checked={enableTracking}
                         onCheckedChange={() => handleToggleButton("tracking")}
                     />
@@ -69,7 +69,7 @@ function Settings({ data }: PropsType) {
 
                 {/* Enable schedule */}
                 <div className="p-3 flex items-center gap-3 bg-my-bg-dark rounded-lg shadow">
-                    <div className="p-3.5 rounded-sm bg-zinc-800 text-white">
+                    <div className="self-start sm:self-center p-3.5 rounded-sm bg-zinc-800 text-white">
                         <FileClock className="w-5 h-5" />
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
@@ -82,7 +82,7 @@ function Settings({ data }: PropsType) {
                     </div>
                     <Switch
                         id="enable-sharing"
-                        className="relative right-2"
+                        className="self-start sm:self-center"
                         checked={enableSharing}
                         onCheckedChange={() => handleToggleButton("sharing")}
                     />
@@ -90,20 +90,20 @@ function Settings({ data }: PropsType) {
 
                 {/* Disconnect & Delete account */}
                 <div className="p-3 flex items-center gap-3 bg-my-bg-dark rounded-lg shadow">
-                    <div className="p-3.5 rounded-sm bg-red-600/20 text-red-600">
+                    <div className="self-start sm:self-center p-3.5 rounded-sm bg-red-600/20 text-red-600">
                         <Trash className="w-5 h-5" />
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
                         <h1 className="font-semibold text-sm text-white">
-                            Disconnect & Delete Account
+                            Disconnect & Remove WA Group
                         </h1>
-                        <p className="font-medium text-xs text-muted-foreground">
-                            Disconnect from Report Buddy and delete your account, along with
-                            all the reports
+                        <p className="font-medium text-xs text-muted-foreground w-full">
+                            Disconnect from Report Buddy and remove WA group you have
+                            selected.
                         </p>
                     </div>
-                    <Button className="border border-red-600 text-red-600 hover:bg-red-600/20 cursor-pointer">
-                        Delete
+                    <Button className="self-start sm:self-center border border-red-600 text-red-600 hover:bg-red-600/20 cursor-pointer">
+                        Remove
                     </Button>
                 </div>
             </div>
