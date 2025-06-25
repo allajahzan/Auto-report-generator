@@ -82,9 +82,9 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
         });
     };
 
-    // useMutation to update participant's details
-    const { error, isPending, mutate } = useMutation({
-        mutationKey: ["update-participant"],
+    // useMutation for updating participant's details
+    const { mutate, isPending, error } = useMutation({
+        mutationKey: ["update-participant-details"],
         mutationFn: async (payload: {
             id: string;
             name: string;

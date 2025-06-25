@@ -11,7 +11,7 @@ import { Label } from "../ui/label";
 import { Input } from "../ui/input";
 import { Home, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { patchData } from "@/service/api-service";
 import API_END_POINTS from "@/constants/api-endpoints";
 import { useNotification } from "@/context/notification-context";
@@ -47,17 +47,15 @@ function EditBatchModal({ children, batchName }: PropsType) {
     // Notification context
     const { notify } = useNotification();
 
-    // useQuery for updating batch info
-    const { isLoading, error, refetch } = useQuery({
-        queryKey: ["edit-batch"],
-        queryFn: async () => {
+    // useMutation for updating batch name
+    const { mutate, isPending, error } = useMutation({
+        mutationKey: ["update-batch-name"],
+        mutationFn: async (payload: { batchName: string }) => {
             // Send request
             const resp = await patchData(
                 API_END_POINTS.BATCH +
                 `?groupId=${groupId}&coordinatorId=${phoneNumber}`,
-                {
-                    batchName: bname.current,
-                }
+                payload
             );
 
             // Success response
@@ -66,8 +64,12 @@ function EditBatchModal({ children, batchName }: PropsType) {
                 return resp.data?.data;
             }
         },
-        enabled: false,
-        refetchOnMount: false,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["batch"] });
+        },
+        onError: (error) => {
+            console.log(error);
+        },
         retry: false,
     });
 
@@ -84,7 +86,10 @@ function EditBatchModal({ children, batchName }: PropsType) {
             return;
         }
 
-        refetch();
+        // Update
+        mutate({
+            batchName: bname.current,
+        });
     };
 
     // Handle error
@@ -106,13 +111,6 @@ function EditBatchModal({ children, batchName }: PropsType) {
             }
         }
     }, [error]);
-
-    // Clean up
-    useEffect(() => {
-        return () => {
-            queryClient.removeQueries({ queryKey: ["edit-batch"] });
-        };
-    }, []);
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
@@ -161,12 +159,12 @@ function EditBatchModal({ children, batchName }: PropsType) {
                     </div>
 
                     <Button
-                        disabled={isLoading}
+                        disabled={isPending}
                         onClick={handleSubmit}
                         className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
                         shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
                     >
-                        {isLoading ? (
+                        {isPending ? (
                             <div className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
                                 Processing...
