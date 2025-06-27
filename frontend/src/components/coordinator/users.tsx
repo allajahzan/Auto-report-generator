@@ -1,5 +1,5 @@
 import type { IBatch } from "@/types/batch";
-import NameCard from "../common/name-card";
+import NameCard from "@/components/common/name-card";
 import { UserRound } from "lucide-react";
 
 // Interface for Props

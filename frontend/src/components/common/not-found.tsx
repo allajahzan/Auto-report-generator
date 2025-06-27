@@ -6,8 +6,8 @@ interface PropsType {
 // Not found Component
 function NotFound({ message }: PropsType) {
     return (
-        <div className="min-h-full bg-my-bg-dark flex items-center justify-center rounded-2xl shadow">
-            <p className="font-medium text-sm text-white">{message}</p>
+        <div className="min-h-full bg-my-bg-light flex items-center justify-center rounded-2xl shadow">
+            <p className="font-medium text-xs tracking-wide text-white">{message}</p>
         </div>
     );
 }

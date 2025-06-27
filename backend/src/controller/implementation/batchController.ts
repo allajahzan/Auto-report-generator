@@ -42,7 +42,7 @@ export class BatchController implements IBatchController {
         next: NextFunction
     ): Promise<void> {
         try {
-            const { coordinatorId, groupId } = req.query;
+            const { groupId, coordinatorId } = req.query;
             const data = req.body;
 
             await this.batchService.updateBatchDetails(
@@ -57,6 +57,26 @@ export class BatchController implements IBatchController {
         }
     }
 
+    // Get participants
+    async getParticipants(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<void> {
+        try {
+            const { groupId, coordinatorId } = req.query;
+
+            const data = await this.batchService.getParticipants(
+                groupId as string,
+                coordinatorId as string
+            );
+
+            SendResponse(res, HTTPStatusCode.OK, ResponseMessage.SUCCESS, data);
+        } catch (err: unknown) {
+            next(err);
+        }
+    }
+
     // Update participants
     async updateParicipants(
         req: Request,
@@ -64,13 +84,55 @@ export class BatchController implements IBatchController {
         next: NextFunction
     ): Promise<void> {
         try {
-            const { coordinatorId, groupId } = req.query;
+            const { groupId, coordinatorId } = req.query;
             const participant = req.body;
 
             await this.batchService.updateParicipants(
                 groupId as string,
                 coordinatorId as string,
                 participant
+            );
+
+            SendResponse(res, HTTPStatusCode.OK, ResponseMessage.SUCCESS);
+        } catch (err: unknown) {
+            next(err);
+        }
+    }
+
+    // Select group
+    async selectGroup(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<void> {
+        try {
+            const { groupId, coordinatorId } = req.query;
+            const data = req.body;
+
+            await this.batchService.selectGroup(
+                groupId as string,
+                coordinatorId as string,
+                data
+            );
+
+            SendResponse(res, HTTPStatusCode.OK, ResponseMessage.SUCCESS);
+        } catch (err: unknown) {
+            next(err);
+        }
+    }
+
+    // Disconnect
+    async disconnect(
+        req: Request,
+        res: Response,
+        next: NextFunction
+    ): Promise<void> {
+        try {
+            const { groupId, coordinatorId } = req.query;
+
+            await this.batchService.disconnect(
+                groupId as string,
+                coordinatorId as string
             );
 
             SendResponse(res, HTTPStatusCode.OK, ResponseMessage.SUCCESS);

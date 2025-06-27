@@ -6,7 +6,6 @@ const batchSchema = new Schema<IBatchSchema>(
     {
         coordinatorId: {
             type: String,
-            required: true,
             unique: true,
             index: true,
         },
@@ -45,7 +44,7 @@ const batchSchema = new Schema<IBatchSchema>(
             type: Boolean,
             default: false,
         },
-        isSchedulingEnabled: {
+        isSharingEnabled: {
             type: Boolean,
             default: false,
         },

@@ -1,6 +1,6 @@
 import student from "@/assets/images/student.png";
-import { Input } from "../ui/input";
-import { Button } from "../ui/button";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Link, Loader2, Phone, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
@@ -23,7 +23,13 @@ function GetStarted() {
     const [groups, setGroups] = useState<IGroup[] | []>([]);
 
     // Auth context
-    const { phoneNumber: phn, setPhoneNumber, setConnection } = useAuth();
+    const {
+        phoneNumber: phn,
+        setPhoneNumber,
+        setConnection,
+        setGroupId,
+        clearAuth,
+    } = useAuth();
 
     // Phone number
     const phoneNumber = useRef<string>(phn);
@@ -33,7 +39,7 @@ function GetStarted() {
     const [qr, setQr] = useState<string>(localStorage.getItem("qr") || "");
     const [loading, setLoading] = useState<boolean>(false);
 
-    // Notificatino context
+    // Notification context
     const { notify } = useNotification();
 
     // Handle get started
@@ -78,21 +84,33 @@ function GetStarted() {
 
     // Listen for BOT status
     useEffect(() => {
-        const handleBotStatus = (status: string, message: string) => {
-            if (status === "connected" && localStorage.getItem("groupId")) {
+        const handleBotStatus = (
+            status: "connected" | "disconnected" | "expired" | "error",
+            message: string,
+            groupId?: string
+        ) => {
+            // Bot status is connected and groupId is present
+            if (status === "connected" && groupId) {
+                localStorage.removeItem("qr");
+                setQr("");
+
+                // Auth states
+                localStorage.setItem("groupId", groupId);
+                setGroupId(groupId);
                 localStorage.setItem("connection", "1");
                 setConnection(true);
-                setLoading(false);
-            } else if (
-                status === "expired" ||
-                status === "disconnected" ||
-                status === "error"
-            ) {
-                // Reset states
+            }
+
+            // Set loading false and clear qr code
+            // Only if bot status is not connected
+            if (status !== "connected") {
                 localStorage.removeItem("qr");
                 setQr("");
                 setLoading(false);
-                setOpen(false);
+            }
+
+            if (status === "disconnected") {
+                clearAuth();
             }
 
             notify(message);
@@ -108,19 +126,15 @@ function GetStarted() {
 
     // Listen for group list
     useEffect(() => {
-        if (!localStorage.getItem("groupId")) {
-            groupList((grplist) => {
-                setGroups(grplist);
+        groupList((grplist) => {
+            setGroups(grplist);
+            setOpen(true);
 
-                // Open modal
-                setOpen(true);
-
-                localStorage.removeItem("qr");
-                setQr("");
-                setLoading(false);
-            });
-        }
-    }, [localStorage.getItem("groupId")]);
+            localStorage.removeItem("qr");
+            setQr("");
+            setLoading(false);
+        });
+    }, []);
 
     return (
         <div className="w-full max-w-6xl mx-auto h-full flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-0 p-5 overflow-auto no-scrollbar">
@@ -205,7 +219,7 @@ function GetStarted() {
                             {loading ? (
                                 <span className="flex items-center gap-2">
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    <p>Processing</p>
+                                    Processing
                                 </span>
                             ) : (
                                 <span className="flex items-center gap-2">

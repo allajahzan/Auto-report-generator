@@ -13,14 +13,15 @@ import {
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
 import robo from "@/assets/images/student.png";
-import Loader from "../common/loader";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import Loader from "@/components/common/loader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Users from "./users";
 import Settings from "./settings";
 import EditBatchModal from "./modal-edit-batch";
+import { errorHandler } from "@/utils/error-handler";
 
 // Dashboard coordinator
 function DashboardCoordinator() {
@@ -65,19 +66,7 @@ function DashboardCoordinator() {
     // Handle error
     useEffect(() => {
         if (error) {
-            console.log(error);
-
-            if ((error as any).status === 403) {
-                notify("Connection to Report Buddy is lost ⛓️‍💥");
-
-                localStorage.removeItem("connection");
-                setConnection(false);
-            } else if ((error as any).status === 401) {
-                notify("You are not authorized to access this page 🚫");
-                clearAuth();
-            } else {
-                notify("Something went wrong, try again later 🤥");
-            }
+            errorHandler(error, notify, setConnection, clearAuth);
         }
     }, [error]);
 
@@ -136,7 +125,7 @@ function DashboardCoordinator() {
                         {/* Batch name */}
                         <div className="flex justify-between">
                             <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
-                                <span className="text-yellow-600 text-2xl sm:text-3xl">
+                                <span className="text-white mask-b-from-green-600 text-2xl sm:text-3xl">
                                     {data.batchName.toUpperCase()}
                                 </span>{" "}
                                 Communication batch

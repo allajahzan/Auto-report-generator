@@ -1,6 +1,7 @@
 const API_END_POINTS = {
     BATCH : "/batch",
-    PARTICIPANT : "/batch/participant"
+    GROUP: "/batch/group",
+    PARTICIPANT : "/batch/participant",
 };
 
 export default API_END_POINTS;

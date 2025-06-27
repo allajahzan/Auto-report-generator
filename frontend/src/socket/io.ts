@@ -37,12 +37,13 @@ export const getQRcode = (callback: (qrCode: string) => void) => {
 export const botStatus = (
     callback: (
         status: "connected" | "disconnected" | "expired" | "error",
-        message: string
+        message: string,
+        groupId?: string
     ) => void
 ) => {
     try {
-        socket.on("bot-status", (status, message) => {
-            callback(status, message);
+        socket.on("bot-status", (status, message, groupId) => {
+            callback(status, message, groupId);
         });
     } catch (err) {
         console.log(err);
@@ -54,74 +55,6 @@ export const groupList = (callback: (groupList: IGroup[]) => void) => {
     try {
         socket.on("group-list", (groupList: IGroup[]) => {
             callback(groupList);
-        });
-    } catch (err) {
-        console.log(err);
-    }
-};
-
-// Emit to get participants
-export const getParticipants = (phoneNumber: string, groupId: string) => {
-    try {
-        socket.emit("get-participants", phoneNumber, groupId);
-    } catch (err) {
-        console.log(err);
-    }
-};
-
-// Listen for participants
-export const pariticipantsList = (
-    callback: (
-        participants: {
-            id: string;
-            name: string;
-            phoneNumber: string;
-            role: string;
-            profilePic: string;
-        }[]
-    ) => void
-) => {
-    try {
-        socket.on("participants-list", (paricipants) => {
-            callback(paricipants);
-        });
-    } catch (err) {
-        console.log(err);
-    }
-};
-
-// Emit to submit selected group and participants details
-export const submitGroupAndParticipants = (
-    groupId: string,
-    batchName: string,
-    participants: {
-        id: string;
-        name: string;
-        phoneNumber: string;
-        role: string;
-    }[],
-    phoneNumber: string
-) => {
-    try {
-        socket.emit(
-            "submit-group-and-participants",
-            groupId,
-            batchName,
-            participants,
-            phoneNumber
-        );
-    } catch (err) {
-        console.log(err);
-    }
-};
-
-// Listen for submit-group-and-participants event result
-export const resultSubmitGroupAndParticipants = (
-    callback: (status: boolean) => void
-) => {
-    try {
-        socket.on("submit-group-and-participants-result", (status) => {
-            callback(status);
         });
     } catch (err) {
         console.log(err);

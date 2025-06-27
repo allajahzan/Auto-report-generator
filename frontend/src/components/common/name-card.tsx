@@ -1,8 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, MoreVertical, Phone } from "lucide-react";
+import { Briefcase, Dot, Edit, MoreVertical, Phone } from "lucide-react";
 import profile from "@/assets/images/groups.svg";
 import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -47,19 +47,24 @@ function NameCard({ data, isMoreOption }: PropsType) {
             </motion.div>
 
             {/* Name and details */}
-            <div className="flex-1 flex flex-col justify-center gap-1 min-w-0">
+            <div className="flex-1 flex flex-col justify-center gap-0 min-w-0">
                 <div className="flex items-center gap-2">
                     <p className="text-base text-white font-semibold truncate">
                         {data.name || "Unknown"}
                     </p>
-                    <Badge className="relative text-[10px] tracking-wider text-white font-medium bg-zinc-800 group-hover:bg-zinc-700 hover:bg-zinc-700 rounded-full overflow-hidden shadow">
+                    {/* <Badge className="relative text-[11px] tracking-wider text-black font-normal bg-white hover:bg-white rounded-full overflow-hidden shadow">
                         {data.role || "Paricipant"}
-                    </Badge>
+                    </Badge> */}
                 </div>
                 <p className="text-xs text-white font-medium tracking-wide flex items-center w-full truncate">
                     <span className="flex items-center gap-1">
                         <Phone className="w-3 h-3 shrink-0" />
                         {data.phoneNumber}
+                    </span>
+                    <Dot/>
+                    <span className="flex items-center gap-1">
+                        <Briefcase className="w-3 h-3 shrink-0" />
+                        {data.role}
                     </span>
                 </p>
             </div>
