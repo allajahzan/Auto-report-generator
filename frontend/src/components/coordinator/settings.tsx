@@ -149,7 +149,7 @@ function Settings({ data }: PropsType) {
                     <div className="flex-1 flex flex-col gap-1">
                         <h1 className="font-semibold text-sm text-white">Logout</h1>
                         <p className="font-medium text-xs text-muted-foreground w-full">
-                            This will disconnect your WhatsApp account from Report Buddy.
+                            This will remove your WhatsApp account from Report Buddy.
                         </p>
                     </div>
                     <ConfirmModal

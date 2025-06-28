@@ -14,6 +14,7 @@ import { ReportRepository } from "../repository/implementation/reportRepository"
 import Report from "../model/reportSchema";
 import { ObjectId } from "mongoose";
 import { scheduleAudioTaskReport } from "../job/audio-task-report";
+import { detectIsTopic, detectTaskType } from "../utils/detectTaskType";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);
@@ -260,7 +261,7 @@ export const startSocket = async (
             try {
                 // Between 15-22PM (3-10PM)
                 const time = new Date().getHours();
-                // if (time < 15 || time > 22) return;
+                if (time < 15 || time > 22) return;
 
                 // Batch
                 const batch = await batchRepository.findOne({
@@ -270,186 +271,257 @@ export const startSocket = async (
                 if (!batch || !batch.isTrackingEnabled || !messages || !messages.length)
                     return;
 
+                // Group ID of batch
                 const groupIdFromDB = batch.groupId;
 
                 for (const msg of messages) {
                     try {
-                        // Check weather message is from group
-                        const isMessageFromGroup =
-                            type === "notify" && msg.key.remoteJid?.endsWith("@g.us");
+                        // Text message
+                        const textMessage =
+                            msg.message?.conversation ||
+                            msg.message?.extendedTextMessage?.text ||
+                            "";
 
-                        // Check with group ID
-                        if (isMessageFromGroup && groupIdFromDB === msg.key.remoteJid) {
-                            const msgSenderId = msg.key.participant;
-                            const sender = batch.participants.find(
-                                (p) => p.id === msgSenderId
-                            );
+                        // Correct date with proper timezone
+                        const now = new Date();
+                        const istDate = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+                        const dateStr = istDate.toISOString().split("T")[0]; // "2025-06-28"
 
-                            if (!sender) return;
+                        // Check weather it's a self message
+                        const isSelfMessage =
+                            msg.key.fromMe &&
+                            msg.key.remoteJid ===
+                            sock.user?.id.split(":")[0] + "@s.whatsapp.net";
 
-                            console.log(
-                                "sender name:",
-                                sender.name,
-                                "sender role:",
-                                sender.role
-                            );
+                        if (isSelfMessage) {
+                            const taskType = detectTaskType(textMessage);
+                            const isTopic = detectIsTopic(textMessage);
 
-                            // If not student, go next
-                            if (sender.role !== "Student") continue;
+                            if (taskType || isTopic) {
+                                console.log("Task Type:", taskType);
+                                console.log("TaskTopic:", isTopic);
 
-                            const textMessage =
-                                msg.message?.conversation ||
-                                msg.message?.extendedTextMessage?.text ||
-                                "";
+                                const updatedReport = await reportRepository.findOneAndUpdate(
+                                    { batchId: batch._id as unknown as string, date: dateStr },
+                                    {
+                                        $set: isTopic
+                                            ? { taskTopic: textMessage.split(":")[1].trim() }
+                                            : { taskType },
+                                    },
+                                    { upsert: true, new: true }
+                                );
 
-                            console.log("message:", textMessage ? textMessage : undefined);
-
-                            // Check weather message is text and also it is "Audio task"
-                            const isTextIsAudioTask = /\baudio\s*task\b/i.test(
-                                textMessage.trim()
-                            );
-
-                            console.log("Text is 'Audio task':", isTextIsAudioTask);
-
-                            const now = new Date();
-                            now.setHours(0, 0, 0, 0);
-
-                            // If message is text and it is "Audio task"
-                            if (isTextIsAudioTask && sender) {
-                                try {
-                                    // Check if report of this batch exists for this day
-                                    let isReportExist = await reportRepository.findOne({
-                                        batchId: batch._id,
-                                        date: now,
-                                    });
-
-                                    if (!isReportExist) {
-                                        isReportExist = await reportRepository.create({
-                                            batchId: batch._id as unknown as ObjectId,
-                                            date: now,
-                                        });
-                                    }
-
-                                    if (!isReportExist) return;
-
-                                    const existingReportOfSenderIndex =
-                                        isReportExist.audioTaskReport.findIndex(
-                                            (r) => r.phoneNumber === sender.phoneNumber
-                                        );
-
-                                    // Not exist, then add new report for sender
-                                    if (existingReportOfSenderIndex === -1) {
-                                        await reportRepository.update(
-                                            { batchId: batch._id },
+                                if (!updatedReport) {
+                                    try {
+                                        await sock.sendMessage(
+                                            msg.key.remoteJid as string,
                                             {
-                                                $push: {
-                                                    audioTaskReport: {
-                                                        id: sender.id,
-                                                        name: sender.name || sender.phoneNumber,
-                                                        phoneNumber: sender.phoneNumber,
-                                                        isCompleted: false,
-                                                        timestamp: new Date(),
-                                                    },
-                                                },
-                                            }
-                                        );
+                                                text: `Sorry, we couldn’t update the ${isTopic ? "topic" : "task"
+                                                    } for ${new Date(
+                                                        dateStr
+                                                    ).toLocaleDateString()} ❌.\n\nPlease try again in a few moments or update it directly through the Report Buddy web app.\n\n– Report Buddy`,
+                                            },
 
-                                        console.log("Created attendence for sender:", phoneNumber);
-                                    } else {
+                                            { quoted: msg }
+                                        );
+                                    } catch (err) {
                                         console.log(
-                                            "Already created attendence for sender:",
+                                            "Error notifying the coordinator:",
                                             phoneNumber
                                         );
                                     }
-                                } catch (err) {
-                                    console.error(
-                                        "Error processing audio task with text message:",
-                                        phoneNumber
-                                    );
-                                }
-                            }
-
-                            // If message is audio
-                            if (msg.message?.audioMessage && sender) {
-                                try {
-                                    // Check if report of this batch exists for this day
-                                    let isReportExist = await reportRepository.findOne({
-                                        batchId: batch._id,
-                                        date: now,
-                                    });
-
-                                    if (!isReportExist) return;
-
-                                    const existingReportOfSender =
-                                        isReportExist.audioTaskReport.find(
-                                            (r) => r.phoneNumber === sender.phoneNumber
+                                } else {
+                                    try {
+                                        await sock.sendMessage(
+                                            msg.key.remoteJid as string,
+                                            {
+                                                text: `${isTopic ? "Topic" : "Task"
+                                                    } updated for the date ${new Date(
+                                                        dateStr
+                                                    ).toLocaleDateString()} successfully ✅.\n\n-Report Buddy`,
+                                            },
+                                            { quoted: msg }
                                         );
-
-                                    if (
-                                        existingReportOfSender &&
-                                        !existingReportOfSender.isCompleted
-                                    ) {
-                                        // Time difference
-                                        const timeDiff =
-                                            new Date().getTime() -
-                                            new Date(existingReportOfSender.timestamp).getTime();
-
-                                        // Within 2 minutes
-                                        if (timeDiff <= 2 * 60 * 1000) {
-                                            await reportRepository.update(
-                                                {
-                                                    batchId: batch._id,
-                                                    "audioTaskReport.phoneNumber": sender.phoneNumber,
-                                                },
-                                                { $set: { "audioTaskReport.$.isCompleted": true } }
-                                            );
-
-                                            console.log(
-                                                "Completed attendence for sender:",
-                                                phoneNumber
-                                            );
-                                        } else {
-                                            // Delete the report of sender if time is over
-                                            console.log("Time is over for :", sender.phoneNumber);
-
-                                            await reportRepository.update(
-                                                {
-                                                    batchId: batch._id,
-                                                    "audioTaskReport.phoneNumber": sender.phoneNumber,
-                                                },
-                                                {
-                                                    $pull: {
-                                                        audioTaskReport: {
-                                                            phoneNumber: sender.phoneNumber,
-                                                        },
-                                                    },
-                                                }
-                                            );
-
-                                            // Notify the sender
-                                            try {
-                                                await sock.sendMessage(sender.id, {
-                                                    text: `Dear ${sender.name || "Participant"
-                                                        },\nYour audio task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Coordinator`,
-                                                });
-                                            } catch (err) {
-                                                console.error(
-                                                    "Error sending warning message to sender:",
-                                                    phoneNumber
-                                                );
-                                            }
-                                        }
+                                    } catch (err) {
+                                        console.log(
+                                            "Error notifying the coordinator:",
+                                            phoneNumber
+                                        );
                                     }
-                                } catch (err) {
-                                    console.error(
-                                        "Error processing audio task with audio message:",
-                                        phoneNumber
-                                    );
                                 }
                             }
                         }
+
+                        // Check weather message is from that perticular group or not
+                        const isMessageFromGroup =
+                            type === "notify" && msg.key.remoteJid?.endsWith("@g.us");
+                        const groupId = msg.key.remoteJid;
+                        const msgSenderId = msg.key.participant;
+
+                        if (
+                            !isMessageFromGroup ||
+                            groupIdFromDB !== groupId ||
+                            !msgSenderId
+                        )
+                            continue;
+
+                        // Get sender
+                        const sender = batch.participants.find((p) => p.id === msgSenderId);
+                        if (!sender) continue;
+
+                        console.log(
+                            "sender name:",
+                            sender.name,
+                            ",",
+                            "sender role:",
+                            sender.role
+                        );
+                        console.log("message:", textMessage ? textMessage : undefined);
+
+                        // Check weather message is text and also it is "Start"
+                        const isTaskStarted = /\bstart\b/i.test(textMessage.trim());
+                        console.log("Task Started:", isTaskStarted);
+
+                        let isReportExist = await reportRepository.findOne({
+                            batchId: batch._id as unknown as string,
+                            date: dateStr,
+                        });
+
+                        if (!isReportExist) {
+                            try {
+                                await sock.sendMessage(sender.id, {
+                                    text: "Sorry, we couldn't initialize your task 👎.",
+                                });
+                            } catch (err) {
+                                console.log("Error notifying the sender:", phoneNumber);
+                            }
+
+                            continue;
+                        }
+
+                        // Now initialize attendence for sender
+                        if (isTaskStarted) {
+                            try {
+                                // Existing report of sender
+                                const existingReportOfSenderIndex =
+                                    isReportExist.audioTaskReport.findIndex(
+                                        (r) => r.phoneNumber === sender.phoneNumber
+                                    );
+
+                                // Not exist, then add new report for sender
+                                if (existingReportOfSenderIndex === -1) {
+                                    await reportRepository.findOneAndUpdate(
+                                        { batchId: batch._id as unknown as string, date: dateStr },
+                                        {
+                                            $push: {
+                                                audioTaskReport: {
+                                                    id: sender.id,
+                                                    name: sender.name || sender.phoneNumber,
+                                                    phoneNumber: sender.phoneNumber,
+                                                    isCompleted: false,
+                                                    timestamp: new Date(),
+                                                },
+                                            },
+                                        }
+                                    );
+
+                                    console.log("Created attendence for sender:", phoneNumber);
+                                } else {
+                                    console.log(
+                                        "Already initialized attendence for sender:",
+                                        phoneNumber
+                                    );
+                                }
+                            } catch (err) {
+                                console.error(
+                                    `Error initializing ${isReportExist.taskType} task:`,
+                                    phoneNumber
+                                );
+                            }
+                        }
+
+                        // If task is audio, check message is audio
+                        // If task is grammer or Writing check message is image
+                        if (
+                            (msg.message?.audioMessage &&
+                                isReportExist.taskType === "Audio") ||
+                            (msg.message?.imageMessage &&
+                                (isReportExist.taskType === "Writing" ||
+                                    isReportExist.taskType === "Listening"))
+                        ) {
+                            try {
+                                // Existing report of sender
+                                const existingReportOfSender =
+                                    isReportExist.audioTaskReport.find(
+                                        (r) => r.phoneNumber === sender.phoneNumber
+                                    );
+
+                                if (
+                                    existingReportOfSender &&
+                                    !existingReportOfSender.isCompleted
+                                ) {
+                                    // Time difference
+                                    const timeDiff =
+                                        new Date().getTime() -
+                                        new Date(existingReportOfSender.timestamp).getTime();
+
+                                    // Within 2 minutes
+                                    if (timeDiff <= 2 * 60 * 1000) {
+                                        await reportRepository.findOneAndUpdate(
+                                            {
+                                                batchId: batch._id,
+                                                date: dateStr,
+                                                "audioTaskReport.phoneNumber": sender.phoneNumber,
+                                            },
+                                            { $set: { "audioTaskReport.$.isCompleted": true } }
+                                        );
+
+                                        console.log(
+                                            "Completed attendence for sender:",
+                                            phoneNumber
+                                        );
+                                    } else {
+                                        // Delete the attendence of sender if time is over
+                                        console.log("Time is over for :", sender.phoneNumber);
+
+                                        await reportRepository.findOneAndUpdate(
+                                            {
+                                                batchId: batch._id,
+                                                date: dateStr,
+                                                "audioTaskReport.phoneNumber": sender.phoneNumber,
+                                            },
+                                            {
+                                                $pull: {
+                                                    audioTaskReport: {
+                                                        phoneNumber: sender.phoneNumber,
+                                                    },
+                                                },
+                                            }
+                                        );
+
+                                        // Notify the sender
+                                        try {
+                                            await sock.sendMessage(sender.id, {
+                                                text: `Dear ${sender.name || "Participant"},\nYour ${isReportExist.taskType
+                                                    } task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Coordinator`,
+                                            });
+                                        } catch (err) {
+                                            console.error(
+                                                "Error sending warning message to sender:",
+                                                phoneNumber
+                                            );
+                                        }
+                                    }
+                                }
+                            } catch (err) {
+                                console.error(
+                                    `Error processing ${isReportExist.taskType} task:`,
+                                    phoneNumber
+                                );
+                            }
+                        }
                     } catch (err) {
-                        console.error("Error processing individual message:", phoneNumber);
+                        console.error("Error processing individual message:", err);
                     }
                 }
             } catch (err) {
@@ -532,7 +604,7 @@ export const startSocketOnServerStart = async () => {
             });
 
             await Promise.allSettled(refreshPromises);
-        }, 5 * 60 * 1000);
+        }, 2 * 60 * 1000);
     } catch (err) {
         console.error("Error in startSocketOnServerStart:", err);
     }

@@ -11,7 +11,6 @@ export interface IBatch {
         profilePic: string;
         role: string;
     }[];
-    audioTaskTopic: string;
     isTrackingEnabled: boolean;
     isSharingEnabled: boolean;
     createdAt: Date;

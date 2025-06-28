@@ -37,9 +37,6 @@ const batchSchema = new Schema<IBatchSchema>(
             ],
             default: [],
         },
-        audioTaskTopic: {
-            type: String,
-        },
         isTrackingEnabled: {
             type: Boolean,
             default: false,
