@@ -8,6 +8,6 @@ export interface IBatchSchema extends Document {
     participants: { id: string; name: string; phoneNumber: string , role: string }[];
     audioTaskTopic: string;
     isTrackingEnabled: boolean;
-    isSchedulingEnabled: boolean;
+    isSharingEnabled: boolean;
     createdAt: Date;
 }

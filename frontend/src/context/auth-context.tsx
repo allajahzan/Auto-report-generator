@@ -54,11 +54,9 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
     // Clear auth
     const clearAuth = () => {
-        localStorage.removeItem("phoneNumber");
+        localStorage.clear();
         setPhoneNumber("");
-        localStorage.removeItem("connection");
         setConnection(false);
-        localStorage.removeItem("groupId");
         setGroupId("");
     };
 
@@ -75,7 +73,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem("connection");
             setConnection(false);
 
-            notify("You are not authorized to access this page 🚫");
+            notify("You are not authorized, session expired 🚫");
 
             return false;
         }

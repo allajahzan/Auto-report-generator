@@ -5,9 +5,9 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from "../ui/dialog";
-import { Label } from "../ui/label";
-import { Input } from "../ui/input";
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Briefcase, Loader2, Phone, UserRound } from "lucide-react";
 import {
     Select,
@@ -15,8 +15,8 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "../ui/select";
-import { Button } from "../ui/button";
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { patchData } from "@/service/api-service";
 import API_END_POINTS from "@/constants/api-endpoints";
@@ -28,7 +28,9 @@ import {
     formSchemaParticipant,
     type FormTypeParticipant,
 } from "@/validations/update-participant";
-import ValidationError from "../common/validation-error";
+import ValidationError from "@/components/common/validation-error";
+import { useParams } from "react-router-dom";
+import { errorHandler } from "@/utils/error-handler";
 // Interface for Props
 interface PropsType {
     open: boolean;
@@ -44,6 +46,11 @@ interface PropsType {
 
 // Edit participants Modal
 function EditParticipantModal({ open, setOpen, data }: PropsType) {
+    // Params
+    const params = useParams();
+    const phoneNumber = params.phoneNumber;
+    const groupId = params.groupId;
+
     // Participant role
     const [prole, setProle] = useState<string>("");
 
@@ -92,10 +99,15 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
             role: string;
         }) => {
             // Send request
-            const resp = await patchData(API_END_POINTS.PARTICIPANT, payload);
+            const resp = await patchData(
+                API_END_POINTS.PARTICIPANT +
+                `?groupId=${groupId}&coordinatorId=${phoneNumber}`,
+                payload
+            );
 
             // Success response
             if (resp && resp.status === 200) {
+                setOpen(false);
                 return resp.data?.data;
             }
         },
@@ -116,26 +128,15 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
                 pnumber: data.phoneNumber,
                 prole: data.role,
             });
+
+            setProle(data.role);
         }
     }, [open, data]);
 
-    // Handle errors
+    // Handle error
     useEffect(() => {
         if (error) {
-            console.log(error);
-
-            if ((error as any).status === 403) {
-                setOpen(false);
-                notify("Connection to Report Buddy is lost ⛓️‍💥");
-
-                localStorage.removeItem("connection");
-                setConnection(false);
-            } else if ((error as any).status === 401) {
-                notify("You are not authorized to access this page 🚫");
-                clearAuth();
-            } else {
-                notify("Something went wrong, try again later 🤥");
-            }
+            errorHandler(error, notify, setConnection, clearAuth);
         }
     }, [error]);
 
@@ -201,14 +202,13 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
                             Role
                         </Label>
                         <Select
-                            value={prole}
+                            defaultValue={prole}
                             onValueChange={(value) => {
                                 setProle(value);
                                 setValue("prole", value);
                             }}
                         >
                             <SelectTrigger
-                                {...register("prole")}
                                 id="role"
                                 className="relative w-full text-white text-sm font-medium p-5 pl-9 
                                 border border-zinc-800 hover:border-zinc-600 bg-black hover:bg-my-bg-light cursor-pointer"
@@ -233,12 +233,12 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
                         type="submit"
                         disabled={isPending}
                         className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
-                        shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
+                        shadow-none bg-white hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
                     >
                         {isPending ? (
                             <div className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Processing...
+                                Processing
                             </div>
                         ) : (
                             "Update"

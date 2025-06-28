@@ -13,6 +13,7 @@ import Batch from "../model/batchSchema";
 import { ReportRepository } from "../repository/implementation/reportRepository";
 import Report from "../model/reportSchema";
 import { ObjectId } from "mongoose";
+import { scheduleAudioTaskReport } from "../job/audio-task-report";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);
@@ -31,7 +32,8 @@ export const startSocket = async (
     emitQR: (qr: string) => void,
     emitStatus: (
         status: "connected" | "disconnected" | "expired" | "error",
-        message: string
+        message: string,
+        groupId?: string
     ) => void
 ) => {
     try {
@@ -96,6 +98,7 @@ export const startSocket = async (
 
                 // Open connection
                 if (connection === "open") {
+                    currentQR = null; // Make current QR null
                     const connectedPhone = connectedId?.split(":")[0].slice(2);
                     console.log(connectedId);
 
@@ -117,6 +120,21 @@ export const startSocket = async (
 
                     console.log("✅ Connected to BOT:", phoneNumber);
                     setSocket(phoneNumber, sock);
+
+                    // Check weather group already selected or not
+                    const batch = await batchRepository.findOne({
+                        coordinatorId: phoneNumber,
+                    });
+
+                    if (batch && batch.groupId) {
+                        emitStatus(
+                            "connected",
+                            "Successfully connected to Report Buddy 👏",
+                            batch.groupId
+                        );
+
+                        return;
+                    }
 
                     emitStatus("connected", "Successfully connected to Report Buddy 👏");
 
@@ -169,6 +187,7 @@ export const startSocket = async (
 
                 // Closed connection
                 if (connection === "close") {
+                    currentQR = null; // Make current QR null
                     removeSocket(phoneNumber);
 
                     const reason = (lastDisconnect?.error as Boom)?.output?.statusCode;
@@ -186,6 +205,12 @@ export const startSocket = async (
                     // Logged-out
                     if (reason === DisconnectReason.loggedOut) {
                         const connectedPhone = connectedId?.split(":")[0].slice(2);
+
+                        // Remove coordinatorId
+                        await batchRepository.update(
+                            { coordinatorId: phoneNumber },
+                            { $unset: { coordinatorId: 1 } }
+                        );
 
                         console.log("🚪Logged out from BOT:", phoneNumber);
 
@@ -208,7 +233,7 @@ export const startSocket = async (
                     // Restart
                     if (reason === DisconnectReason.restartRequired) {
                         if (ATTEMPT > RETRIES) {
-                            console.log("🔃 Reconnecting...:", phoneNumber);
+                            console.log("🔃 Reconnecting BOT:", phoneNumber);
 
                             setTimeout(() => {
                                 startSocket(phoneNumber, emitQR, emitStatus).catch((err) => {
@@ -235,7 +260,7 @@ export const startSocket = async (
             try {
                 // Between 15-22PM (3-10PM)
                 const time = new Date().getHours();
-                if (time < 15 || time > 22) return;
+                // if (time < 15 || time > 22) return;
 
                 // Batch
                 const batch = await batchRepository.findOne({
@@ -249,14 +274,16 @@ export const startSocket = async (
 
                 for (const msg of messages) {
                     try {
-                        // Check if message is from group
+                        // Check weather message is from group
                         const isMessageFromGroup =
                             type === "notify" && msg.key.remoteJid?.endsWith("@g.us");
 
                         // Check with group ID
                         if (isMessageFromGroup && groupIdFromDB === msg.key.remoteJid) {
                             const msgSenderId = msg.key.participant;
-                            const sender = batch.participants.find((p) => p.id === msgSenderId);
+                            const sender = batch.participants.find(
+                                (p) => p.id === msgSenderId
+                            );
 
                             if (!sender) return;
 
@@ -277,7 +304,7 @@ export const startSocket = async (
 
                             console.log("message:", textMessage ? textMessage : undefined);
 
-                            // Check if message is text and it is "Audio task"
+                            // Check weather message is text and also it is "Audio task"
                             const isTextIsAudioTask = /\baudio\s*task\b/i.test(
                                 textMessage.trim()
                             );
@@ -429,6 +456,9 @@ export const startSocket = async (
                 console.error("Error in messages.upsert handler:", phoneNumber);
             }
         });
+
+        // Schedule audio task report
+        scheduleAudioTaskReport(phoneNumber, sock);
     } catch (err) {
         console.error("Error creating socket or during startup:", phoneNumber);
         emitStatus("error", "Failed connecting to Report Buddy 🤧");
@@ -494,7 +524,7 @@ export const startSocketOnServerStart = async () => {
                     await startSocket(
                         phoneNumber,
                         () => { },
-                        (status, message) => { }
+                        () => { }
                     );
                 } catch (err) {
                     console.error(`Failed to refresh BOT:${phoneNumber}`);

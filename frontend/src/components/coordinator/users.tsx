@@ -1,5 +1,5 @@
 import type { IBatch } from "@/types/batch";
-import NameCard from "../common/name-card";
+import NameCard from "@/components/common/name-card";
 import { UserRound } from "lucide-react";
 
 // Interface for Props
@@ -27,12 +27,11 @@ function Users({ data }: PropsType) {
                 {/* Name and details */}
                 <div className="flex flex-col gap-5 p-3 bg-my-bg-dark rounded-lg shadow">
                     <NameCard
-                        data={{
-                            ...(data.participants.find(
+                        data={
+                            data.participants.find(
                                 (p: any) => p.phoneNumber === data.coordinatorId
-                            ) as IBatch["participants"][0]),
-                            role: "Coordinator",
-                        }}
+                            ) as IBatch["participants"][0]
+                        }
                         isMoreOption={false}
                     />
                 </div>

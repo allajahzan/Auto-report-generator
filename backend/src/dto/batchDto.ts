@@ -8,6 +8,19 @@ export interface IBatchDto {
         name: string;
         phoneNumber: string;
         profilePic: string;
+        role: string;
     }[];
+    audioTaskTopic: string;
+    isTrackingEnabled: boolean;
+    isSharingEnabled: boolean;
     createdAt: Date;
+}
+
+// Dto for participants
+export interface IParticipantDto {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    profilePic: string;
+    role: string;
 }

@@ -5,18 +5,19 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-} from "../ui/dialog";
+} from "@/components/ui/dialog";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Label } from "../ui/label";
-import { Input } from "../ui/input";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Home, Loader2 } from "lucide-react";
-import { Button } from "../ui/button";
+import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { patchData } from "@/service/api-service";
 import API_END_POINTS from "@/constants/api-endpoints";
 import { useNotification } from "@/context/notification-context";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/context/auth-context";
+import { errorHandler } from "@/utils/error-handler";
 
 // Interface for Props
 interface PropsType {
@@ -95,20 +96,7 @@ function EditBatchModal({ children, batchName }: PropsType) {
     // Handle error
     useEffect(() => {
         if (error) {
-            console.log(error);
-
-            if ((error as any).status === 403) {
-                setOpen(false);
-                notify("Connection to Report Buddy is lost ⛓️‍💥");
-
-                localStorage.removeItem("connection");
-                setConnection(false);
-            } else if ((error as any).status === 401) {
-                notify("You are not authorized to access this page 🚫");
-                clearAuth();
-            } else {
-                notify("Something went wrong, try again later 🤥");
-            }
+            errorHandler(error, notify, setConnection, clearAuth);
         }
     }, [error]);
 
@@ -162,12 +150,12 @@ function EditBatchModal({ children, batchName }: PropsType) {
                         disabled={isPending}
                         onClick={handleSubmit}
                         className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
-                        shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
+                        shadow-none bg-white hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
                     >
                         {isPending ? (
                             <div className="flex items-center gap-2">
                                 <Loader2 className="h-4 w-4 animate-spin" />
-                                Processing...
+                                Processing
                             </div>
                         ) : (
                             "Update"

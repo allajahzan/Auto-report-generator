@@ -25,7 +25,7 @@ export const scheduleAudioTaskReport = async (
         console.log(`Cancelled existing job:${phoneNumber}`);
     }
 
-    schedule.scheduleJob(existingJobName, "5 22 * * *", async () => {
+    schedule.scheduleJob(existingJobName, "22 11 * * *", async () => {
         try {
             console.log("It's time to send audio task report in WhatsApp Group");
 
@@ -33,7 +33,7 @@ export const scheduleAudioTaskReport = async (
                 coordinatorId: phoneNumber,
             });
 
-            if (!batch || !batch.isTrackingEnabled || !batch.isSchedulingEnabled)
+            if (!batch || !batch.isTrackingEnabled || !batch.isSharingEnabled)
                 return;
 
             // Participants
@@ -79,7 +79,7 @@ export const scheduleAudioTaskReport = async (
             const coordinator = participants.find(
                 (p) => p.phoneNumber === phoneNumber
             );
-            const trainer = participants.find((p) => p.role === "trainer");
+            const trainer = participants.find((p) => p.role === "Trainer");
 
             // audio task report => text
             let text = `Audio task report\n🎓BATCH : ${batch.batchName

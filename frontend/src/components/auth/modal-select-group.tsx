@@ -5,44 +5,38 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import {
-    ChevronLeft,
-    Home,
-    Loader2,
-    Phone,
-    UserRound,
-    UsersRound,
-} from "lucide-react";
-import {
-    useEffect,
-    useLayoutEffect,
-    useRef,
-    useState,
-    type ChangeEvent,
-} from "react";
+import { ChevronLeft, Home, Phone, UserRound, UsersRound } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import GroupList from "./groups-lists";
-import {
-    getParticipants,
-    pariticipantsList,
-    resultSubmitGroupAndParticipants,
-    submitGroupAndParticipants,
-} from "@/socket/io";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import profile from "@/assets/images/groups.svg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/auth-context";
 import { useNotification } from "@/context/notification-context";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import Loader from "../common/loader";
-import NotFound from "../common/not-found";
+import Loader from "@/components/common/loader";
+import NotFound from "@/components/common/not-found";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchData } from "@/service/api-service";
+import API_END_POINTS from "@/constants/api-endpoints";
+import ConfirmSelectModal from "./modal-confirm-select";
+import { errorHandler } from "@/utils/error-handler";
 
 // Interface for group
 export interface IGroup {
     id: string;
     name: string;
+    profilePic: string;
+}
+
+// Interface for participant
+export interface IParticipant {
+    id: string;
+    name: string;
+    phoneNumber: string;
+    role: string;
     profilePic: string;
 }
 
@@ -59,31 +53,23 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
     const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
 
     // Participants
-    const [participants, setParticipants] = useState<
-        {
-            id: string;
-            name: string;
-            phoneNumber: string;
-            role: string;
-            profilePic: string;
-        }[]
-    >([]);
-
-    const [fetching, setFetching] = useState<boolean>(false);
+    const [participants, setParticipants] = useState<IParticipant[] | []>([]);
 
     // Batch name
     const batchName = useRef<string>("");
-    const error = useRef<HTMLParagraphElement>(null);
+    const nameError = useRef<HTMLParagraphElement>(null);
 
-    const [submiting, setSubmiting] = useState<boolean>(false);
+    // Modal state
+    const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
 
-    const navigate = useNavigate();
+    // Query client
+    const queryClient = useQueryClient();
 
     // Auth context
-    const { phoneNumber, setConnection, setGroupId } = useAuth();
+    const { phoneNumber, setConnection, clearAuth } = useAuth();
 
-    // Notifiation context
-    const { setNotification } = useNotification();
+    // Notification context
+    const { notify } = useNotification();
 
     // Handle text change
     const handleTextChange = (
@@ -107,73 +93,52 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
         });
     };
 
+    // useQuery for fetching participants
+    const { data, isLoading, error } = useQuery({
+        queryKey: ["participants", selectedGroup?.id],
+        queryFn: async () => {
+            // Send request
+            const resp = await fetchData(
+                API_END_POINTS.PARTICIPANT +
+                `?groupId=${selectedGroup?.id}&coordinatorId=${phoneNumber}`
+            );
+
+            // Success response
+            if (resp && resp.status === 200) {
+                return resp.data?.data;
+            }
+        },
+        refetchOnWindowFocus: false,
+        enabled: !!selectedGroup,
+        retry: false,
+    });
+
+    // Set participants
+    useEffect(() => {
+        if (data) {
+            setParticipants(data);
+        }
+    }, [data]);
+
+    // Handle error
+    useEffect(() => {
+        if (error) {
+            errorHandler(error, notify, setConnection, clearAuth);
+        }
+    }, [error]);
+
     // Handle submit
     const handleSubmit = async () => {
         if (!batchName.current) {
-            if (error.current) error.current.innerHTML = "Enter batch name";
+            if (nameError.current) nameError.current.innerHTML = "Enter batch name";
             return;
         }
 
-        if (error.current) error.current.innerHTML = "";
+        if (nameError.current) nameError.current.innerHTML = "";
 
-        // Restore
-        localStorage.setItem("phoneNumber", phoneNumber);
-
-        setSubmiting(true);
-
-        submitGroupAndParticipants(
-            selectedGroup?.id as string,
-            batchName.current.toUpperCase(),
-            participants.map((p) => ({
-                id: p.id,
-                name: p.name,
-                phoneNumber: p.phoneNumber,
-                role: p.role,
-            })),
-            phoneNumber
-        );
+        // Open confirm modal
+        setConfirmOpen(true);
     };
-
-    // Emit get pariticipants event
-    useLayoutEffect(() => {
-        if (selectedGroup) {
-            getParticipants(phoneNumber || "", selectedGroup?.id as string);
-            setFetching(true);
-        }
-    }, [selectedGroup]);
-
-    // Listen paricipants event
-    useLayoutEffect(() => {
-        pariticipantsList((participants) => {
-            setParticipants(participants);
-            setFetching(false);
-        });
-    }, []);
-
-    // Listen for submit-group-and-participants event result
-    useEffect(() => {
-        if (submiting) {
-            resultSubmitGroupAndParticipants((status: boolean) => {
-                setSubmiting(status);
-                if (status) {
-                    setOpen(false);
-
-                    // Auth states
-                    localStorage.setItem("connection", "1");
-                    setConnection(true);
-                    localStorage.setItem("groupId", selectedGroup?.id as string);
-                    setGroupId(selectedGroup?.id as string);
-
-                    setNotification({
-                        id: Date.now().toString(),
-                        message: "You have successfully selected the group ✌️",
-                    });
-
-                    navigate(`/${phoneNumber}/${selectedGroup?.id}`);
-                }
-            });
-        }
-    }, [submiting]);
 
     // Clear states
     useEffect(() => {
@@ -184,6 +149,10 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                 batchName.current = "";
             }
         }
+
+        return () => {
+            queryClient.removeQueries({ queryKey: ["participants"] });
+        };
     }, [open]);
 
     return (
@@ -196,19 +165,19 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                     <DialogTitle className="text-white text-base flex items-center gap-3 text-start w-[calc(100%-5%)]">
                         <span>
                             {!selectedGroup
-                                ? "Select a group to be tracked by Report Buddy."
+                                ? "Select a WhatsApp group to be tracked by Report Buddy."
                                 : "Complete the form below to proceed."}
                         </span>
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground font-medium text-xs text-start">
                         {!selectedGroup
-                            ? "Report Buddy will track the selected group and generate daily reports."
-                            : "These are the details of the group (your batch) you've selected."}
+                            ? "Report Buddy will track the selected WhatsApp group to generate task reports."
+                            : "These are the details of the WhatsApp group (your batch) you've selected."}
                     </DialogDescription>
                 </DialogHeader>
 
                 {/* Groups lists */}
-                {!selectedGroup && (
+                {!isLoading && !selectedGroup && (
                     <div className="h-full flex flex-col gap-4 overflow-hidden">
                         {/* Title */}
                         <div className="flex items-center gap-2 text-white">
@@ -226,9 +195,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                         <GroupList
                                             key={index}
                                             index={index}
-                                            action={() => {
-                                                setSelectedGroup(groups[index]);
-                                            }}
+                                            action={() => setSelectedGroup(groups[index])}
                                             className=""
                                             group={grp}
                                             selectedGroup={selectedGroup}
@@ -243,13 +210,14 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                 )}
 
                 {/* Batch details */}
-                {selectedGroup && (
+                {!isLoading && selectedGroup && (
                     <div className="h-full flex flex-col gap-3 overflow-hidden">
                         {/* Title */}
                         <div
                             onClick={() => {
                                 setSelectedGroup(null);
                                 setParticipants([]);
+                                batchName.current = "";
                             }}
                             className="flex items-center gap-2 text-white cursor-pointer"
                         >
@@ -283,7 +251,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
                             {/* Error */}
                             <p
-                                ref={error}
+                                ref={nameError}
                                 className="relative -top-1 font-medium text-xs text-red-600"
                             ></p>
 
@@ -294,9 +262,8 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
 
                             {/* Lists */}
                             <div className="h-full flex flex-col gap-2">
-                                {!fetching &&
-                                    participants.length > 0 &&
-                                    participants.map((p, index) => (
+                                {participants?.length > 0 &&
+                                    participants?.map((p, index) => (
                                         <motion.div
                                             initial={{ opacity: 0, y: -20 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -347,41 +314,41 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                                     ))}
 
                                 {/* If no participants */}
-                                {!fetching && participants.length === 0 && (
+                                {participants?.length === 0 && (
                                     <NotFound message="No participants found" />
-                                )}
-
-                                {/* Loader */}
-                                {fetching && (
-                                    <div className="h-full flex items-center justify-center">
-                                        <Loader />
-                                    </div>
                                 )}
                             </div>
                         </div>
 
                         {/* Submit button */}
-                        {selectedGroup && (
-                            <div className="flex justify-end gap-2">
-                                <Button
-                                    disabled={submiting || !selectedGroup}
-                                    onClick={handleSubmit}
-                                    className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
-                                        shadow-none bg-muted hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
-                                >
-                                    {submiting ? (
-                                        <div className="flex items-center gap-2">
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                            Processing...
-                                        </div>
-                                    ) : (
-                                        "Submit"
-                                    )}
-                                </Button>
-                            </div>
-                        )}
+
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                onClick={handleSubmit}
+                                className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
+                                        shadow-none bg-white hover:bg-muted dark:bg-muted dark:hover:bg-muted text-foreground"
+                            >
+                                Submit
+                            </Button>
+                        </div>
                     </div>
                 )}
+
+                {/* Loader */}
+                {isLoading && (
+                    <div className="h-full flex items-center justify-center">
+                        <Loader />
+                    </div>
+                )}
+
+                {/* Confirm modal */}
+                <ConfirmSelectModal
+                    open={confirmOpen}
+                    setOpen={setConfirmOpen}
+                    selectedGroup={selectedGroup}
+                    batchName={batchName.current}
+                    participants={participants}
+                />
             </DialogContent>
         </Dialog>
     );

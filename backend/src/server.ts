@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import app from "./app";
-import { isEnvDefined } from "./utils/envChecker";
+import { isEnvDefined } from "./utils/env-checker";
 import { MongodbConnection } from "@codeflare/common";
 import http from "http";
 import { connectSocketIO } from "./socket/io";
