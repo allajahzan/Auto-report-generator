@@ -60,7 +60,6 @@ export class BatchService implements IBatchService {
                         };
                     })
                 ),
-                audioTaskTopic: batch.audioTaskTopic,
                 isTrackingEnabled: batch.isTrackingEnabled,
                 isSharingEnabled: batch.isSharingEnabled,
                 createdAt: batch.createdAt,

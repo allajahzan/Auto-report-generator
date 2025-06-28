@@ -4,12 +4,11 @@ import { IReportSchema } from "../entities/IReportSchema";
 // Implementation of Report Schema
 const reportSchema = new Schema<IReportSchema>({
     batchId: {
-        type: Schema.Types.ObjectId,
-        ref: "Batch",
+        type: String,
         required: true,
     },
     date: {
-        type: Date,
+        type: String,
         required: true,
     },
     audioTaskReport: {
@@ -33,6 +32,12 @@ const reportSchema = new Schema<IReportSchema>({
             },
         ],
     },
+    taskType: {
+        type: String,
+    },
+    taskTopic : {
+        type: String
+    }
 });
 
 const Report = model<IReportSchema>("Report", reportSchema);

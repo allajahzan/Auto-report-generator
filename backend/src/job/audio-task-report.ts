@@ -25,27 +25,28 @@ export const scheduleAudioTaskReport = async (
         console.log(`Cancelled existing job:${phoneNumber}`);
     }
 
-    schedule.scheduleJob(existingJobName, "22 11 * * *", async () => {
+    schedule.scheduleJob(existingJobName, "5 22 * * *", async () => {
         try {
-            console.log("It's time to send audio task report in WhatsApp Group");
+            console.log("It's time to send task report in WhatsApp Group");
 
             const batch = await batchRepository.findOne({
                 coordinatorId: phoneNumber,
             });
 
-            if (!batch || !batch.isTrackingEnabled || !batch.isSharingEnabled)
-                return;
+            if (!batch || !batch.isTrackingEnabled || !batch.isSharingEnabled) return;
 
             // Participants
             const participants = batch.participants;
 
+            // Correct date with proper timezone
             const now = new Date();
-            now.setHours(0, 0, 0, 0);
+            const istDate = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+            const dateStr = istDate.toISOString().split("T")[0]; // "2025-06-28"
 
             // Report of this batch for this day
             const isReportExist = await reportRepository.findOne({
                 batchId: batch._id,
-                date: now,
+                date: dateStr,
             });
 
             // If report of this batch exists,
@@ -82,16 +83,19 @@ export const scheduleAudioTaskReport = async (
             const trainer = participants.find((p) => p.role === "Trainer");
 
             // audio task report => text
-            let text = `Audio task report\n🎓BATCH : ${batch.batchName
-                }\n📅Date: ${formattedDate}\n👨‍🏫Trainer : ${trainer?.name || "Unknown"
-                }\n🎤Coordinator: ${coordinator?.name || "Unknown"}\n📝Topic:${batch.audioTaskTopic || "Not mentioned"
-                }\n\nSubmitted:`;
+            let text = `${isReportExist?.taskType
+                    ? `${isReportExist.taskType + " " + "task"}`
+                    : "Task"
+                } report\n🎓BATCH: ${batch.batchName
+                }\n📅Date: ${formattedDate}\n👨‍🏫Trainer: ${trainer?.name || "Unknown"
+                }\n🎤Coordinator: ${coordinator?.name || "Unknown"}\n📝Topic: ${isReportExist?.taskTopic || "Not mentioned"
+                }\n\nSubmitted:-`;
 
             for (const p in audio_task_report) {
                 if (audio_task_report[p]) text += `\n${p}:✅`;
             }
 
-            text += "\n\nNot submitted:";
+            text += "\n\nNot submitted:-";
 
             for (const p in audio_task_report) {
                 if (!audio_task_report[p]) text += `\n${p}:❌`;
@@ -100,7 +104,10 @@ export const scheduleAudioTaskReport = async (
             // Send text in group
             try {
                 await sock.sendMessage(batch.groupId, { text });
-                console.log("✅ Successfully sent audio task report:", phoneNumber);
+                console.log(
+                    `Successfully sent ${isReportExist?.taskType} task report ✅:`,
+                    phoneNumber
+                );
             } catch (err) {
                 console.error("Error sending audio task report:", phoneNumber);
             }
