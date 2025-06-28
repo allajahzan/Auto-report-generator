@@ -447,7 +447,7 @@ export const startSocket = async (
                                 isReportExist.taskType === "Audio") ||
                             (msg.message?.imageMessage &&
                                 (isReportExist.taskType === "Writing" ||
-                                    isReportExist.taskType === "Grammar"))
+                                    isReportExist.taskType === "Listening"))
                         ) {
                             try {
                                 // Existing report of sender
@@ -515,7 +515,7 @@ export const startSocket = async (
                                 }
                             } catch (err) {
                                 console.error(
-                                    "Error processing audio task with audio message:",
+                                    `Error processing ${isReportExist.taskType} task:`,
                                     phoneNumber
                                 );
                             }
