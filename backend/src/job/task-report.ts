@@ -11,14 +11,14 @@ const batchRepository = new BatchRepository(Batch);
 // Report repository
 const reportRepository = new ReportRepository(Report);
 
-// Schedule audio task report
-export const scheduleAudioTaskReport = async (
+// Schedule task report sharing
+export const scheduleTaskReportSharing = async (
     phoneNumber: string,
     sock: WASocket
 ) => {
-    // Scheduled task to send audio task report at 10:05 PM
+    // Scheduled task to send task report at 10:05 PM
     // Cancel any existing job for this phone number first
-    const existingJobName = `audio-task-report-${phoneNumber}`;
+    const existingJobName = `task-report-${phoneNumber}`;
     const existingJob = schedule.scheduledJobs[existingJobName];
     if (existingJob) {
         existingJob.cancel();
@@ -49,9 +49,10 @@ export const scheduleAudioTaskReport = async (
                 date: dateStr,
             });
 
+            if(!isReportExist) return;
+
             // If report of this batch exists,
-            // get audioTaskReport or else take audioTaskReport as empty array
-            const audioTaskReport = isReportExist?.audioTaskReport || [];
+            const taskReport = isReportExist?.taskReport || [];
 
             let audio_task_report: Record<string, boolean> = {};
 
@@ -60,7 +61,7 @@ export const scheduleAudioTaskReport = async (
                 // If not student, go next
                 if (p.role !== "Student") continue;
 
-                const existingReportOfStudent = audioTaskReport.find(
+                const existingReportOfStudent = taskReport.find(
                     (r) => r.phoneNumber === p.phoneNumber
                 );
 

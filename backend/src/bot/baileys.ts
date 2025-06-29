@@ -12,8 +12,7 @@ import { BatchRepository } from "../repository/implementation/batchRepository";
 import Batch from "../model/batchSchema";
 import { ReportRepository } from "../repository/implementation/reportRepository";
 import Report from "../model/reportSchema";
-import { ObjectId } from "mongoose";
-import { scheduleAudioTaskReport } from "../job/audio-task-report";
+import { scheduleTaskReportSharing } from "../job/task-report";
 import { detectIsTopic, detectTaskType } from "../utils/detectTaskType";
 
 // Batch repository
@@ -307,6 +306,7 @@ export const startSocket = async (
                                         $set: isTopic
                                             ? { taskTopic: textMessage.split(":")[1].trim() }
                                             : { taskType },
+                                            
                                     },
                                     { upsert: true, new: true }
                                 );
@@ -317,7 +317,7 @@ export const startSocket = async (
                                             msg.key.remoteJid as string,
                                             {
                                                 text: `Sorry, we couldn’t update the ${isTopic ? "topic" : "task"
-                                                    } for ${new Date(
+                                                    } for the day ${new Date(
                                                         dateStr
                                                     ).toLocaleDateString()} ❌.\n\nPlease try again in a few moments or update it directly through the Report Buddy web app.\n\n– Report Buddy`,
                                             },
@@ -336,7 +336,7 @@ export const startSocket = async (
                                             msg.key.remoteJid as string,
                                             {
                                                 text: `${isTopic ? "Topic" : "Task"
-                                                    } updated for the date ${new Date(
+                                                    } updated for the day ${new Date(
                                                         dateStr
                                                     ).toLocaleDateString()} successfully ✅.\n\n-Report Buddy`,
                                             },
@@ -404,7 +404,7 @@ export const startSocket = async (
                             try {
                                 // Existing report of sender
                                 const existingReportOfSenderIndex =
-                                    isReportExist.audioTaskReport.findIndex(
+                                    isReportExist.taskReport.findIndex(
                                         (r) => r.phoneNumber === sender.phoneNumber
                                     );
 
@@ -414,7 +414,7 @@ export const startSocket = async (
                                         { batchId: batch._id as unknown as string, date: dateStr },
                                         {
                                             $push: {
-                                                audioTaskReport: {
+                                                taskReport: {
                                                     id: sender.id,
                                                     name: sender.name || sender.phoneNumber,
                                                     phoneNumber: sender.phoneNumber,
@@ -452,7 +452,7 @@ export const startSocket = async (
                             try {
                                 // Existing report of sender
                                 const existingReportOfSender =
-                                    isReportExist.audioTaskReport.find(
+                                    isReportExist.taskReport.find(
                                         (r) => r.phoneNumber === sender.phoneNumber
                                     );
 
@@ -471,9 +471,9 @@ export const startSocket = async (
                                             {
                                                 batchId: batch._id,
                                                 date: dateStr,
-                                                "audioTaskReport.phoneNumber": sender.phoneNumber,
+                                                "taskReport.phoneNumber": sender.phoneNumber,
                                             },
-                                            { $set: { "audioTaskReport.$.isCompleted": true } }
+                                            { $set: { "taskReport.$.isCompleted": true } }
                                         );
 
                                         console.log(
@@ -488,11 +488,11 @@ export const startSocket = async (
                                             {
                                                 batchId: batch._id,
                                                 date: dateStr,
-                                                "audioTaskReport.phoneNumber": sender.phoneNumber,
+                                                "taskReport.phoneNumber": sender.phoneNumber,
                                             },
                                             {
                                                 $pull: {
-                                                    audioTaskReport: {
+                                                    taskReport: {
                                                         phoneNumber: sender.phoneNumber,
                                                     },
                                                 },
@@ -529,8 +529,8 @@ export const startSocket = async (
             }
         });
 
-        // Schedule audio task report
-        scheduleAudioTaskReport(phoneNumber, sock);
+        // Schedule task report sharing
+        scheduleTaskReportSharing(phoneNumber, sock);
     } catch (err) {
         console.error("Error creating socket or during startup:", phoneNumber);
         emitStatus("error", "Failed connecting to Report Buddy 🤧");

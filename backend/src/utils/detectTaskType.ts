@@ -1,7 +1,7 @@
 const taskKeywords = {
-    Audio: [/task:🎙️/i],
-    Writing: [/task:✍️/i],
-    Listening: [/task:🎧/i],
+    Audio: [/task:audio/i],
+    Writing: [/task:writing/i],
+    Listening: [/task:listening/i],
 };
 
 // Detext task type

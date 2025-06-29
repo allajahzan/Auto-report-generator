@@ -32,6 +32,7 @@ function Users({ data }: PropsType) {
                                 (p: any) => p.phoneNumber === data.coordinatorId
                             ) as IBatch["participants"][0]
                         }
+                        showRole={true}
                         isMoreOption={false}
                     />
                 </div>
