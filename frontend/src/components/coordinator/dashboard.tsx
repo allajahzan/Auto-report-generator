@@ -22,6 +22,7 @@ import Users from "./users";
 import Settings from "./settings";
 import EditBatchModal from "./modal-edit-batch";
 import { errorHandler } from "@/utils/error-handler";
+import Reports from "./reports";
 
 // Dashboard coordinator
 function DashboardCoordinator() {
@@ -124,11 +125,13 @@ function DashboardCoordinator() {
                     <div className="relative w-full h-fit p-5 flex flex-col gap-2 bg-my-bg-light rounded-2xl shadow">
                         {/* Batch name */}
                         <div className="flex justify-between">
-                            <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-wide">
-                                <span className="text-yellow-600 text-2xl sm:text-3xl">
+                            <h1 className="text-white">
+                                <span className="text-white text-2xl sm:text-3xl font-extrabold tracking-wider">
                                     {data.batchName.toUpperCase()}
                                 </span>{" "}
-                                Communication batch
+                                <span className="text-base font-medium italic">
+                                    communication batch
+                                </span>
                             </h1>
 
                             {/* Modal */}
@@ -143,7 +146,7 @@ function DashboardCoordinator() {
                         </div>
 
                         {/* Date and paricipants count */}
-                        <div className="flex items-center text-white italic font-medium text-sm">
+                        <div className="flex items-center text-white font-medium text-sm">
                             <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4" />
                                 <span>
@@ -193,7 +196,9 @@ function DashboardCoordinator() {
                         </TabsContent>
 
                         {/* Reports */}
-                        <TabsContent value="reports"></TabsContent>
+                        <TabsContent value="reports" className="flex flex-col gap-2">
+                            <Reports data={data}/>
+                        </TabsContent>
 
                         {/* Settings */}
                         <TabsContent value="settings">

@@ -4,7 +4,7 @@ import { Document, Schema } from "mongoose";
 export interface IReportSchema extends Document {
     batchId: string;
     date: string;
-    audioTaskReport: {
+    taskReport: {
         id: string;
         name: string;
         phoneNumber: string;

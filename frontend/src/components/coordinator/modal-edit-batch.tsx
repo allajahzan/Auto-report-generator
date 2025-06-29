@@ -75,7 +75,9 @@ function EditBatchModal({ children, batchName }: PropsType) {
     });
 
     // Handle submit
-    const handleSubmit = async () => {
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
         if (!bname.current) {
             if (errorp.current) errorp.current.innerHTML = "Enter batch name";
             return;
@@ -117,7 +119,7 @@ function EditBatchModal({ children, batchName }: PropsType) {
                 </DialogHeader>
 
                 {/* Form */}
-                <div className="space-y-3">
+                <form onSubmit={handleSubmit} className="space-y-3">
                     <div className="space-y-2">
                         <Label
                             htmlFor="batchname"
@@ -147,6 +149,7 @@ function EditBatchModal({ children, batchName }: PropsType) {
                     </div>
 
                     <Button
+                        type="submit"
                         disabled={isPending}
                         onClick={handleSubmit}
                         className="h-11 w-full text-center cursor-pointer disabled:cursor-not-allowed 
@@ -161,7 +164,7 @@ function EditBatchModal({ children, batchName }: PropsType) {
                             "Update"
                         )}
                     </Button>
-                </div>
+                </form>
             </DialogContent>
         </Dialog>
     );

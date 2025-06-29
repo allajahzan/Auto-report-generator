@@ -11,7 +11,7 @@ const reportSchema = new Schema<IReportSchema>({
         type: String,
         required: true,
     },
-    audioTaskReport: {
+    taskReport: {
         type: [
             {
                 id: {

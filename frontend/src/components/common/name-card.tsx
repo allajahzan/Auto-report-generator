@@ -21,11 +21,12 @@ interface PropsType {
         role: string;
         profilePic: string;
     };
-    isMoreOption: boolean;
+    isMoreOption?: boolean;
+    showRole?: boolean;
 }
 
 // Name card Component
-function NameCard({ data, isMoreOption }: PropsType) {
+function NameCard({ data, showRole, isMoreOption }: PropsType) {
     // Edit modal state
     const [open, setOpen] = useState<boolean>(false);
 
@@ -61,11 +62,16 @@ function NameCard({ data, isMoreOption }: PropsType) {
                         <Phone className="w-3 h-3 shrink-0" />
                         {data.phoneNumber}
                     </span>
-                    <Dot/>
-                    <span className="flex items-center gap-1">
-                        <Briefcase className="w-3 h-3 shrink-0" />
-                        {data.role}
-                    </span>
+
+                    {showRole && (
+                        <>
+                            <Dot />
+                            <span className="flex items-center gap-1">
+                                <Briefcase className="w-3 h-3 shrink-0" />
+                                {data.role}
+                            </span>
+                        </>
+                    )}
                 </p>
             </div>
 
