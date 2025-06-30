@@ -258,10 +258,6 @@ export const startSocket = async (
         // New messages
         sock.ev.on("messages.upsert", async ({ messages, type }) => {
             try {
-                // Between 15-22PM (3-10PM)
-                const time = new Date().getHours();
-                if (time < 15 || time > 22) return;
-
                 // Batch
                 const batch = await batchRepository.findOne({
                     coordinatorId: phoneNumber,
@@ -306,7 +302,6 @@ export const startSocket = async (
                                         $set: isTopic
                                             ? { taskTopic: textMessage.split(":")[1].trim() }
                                             : { taskType },
-                                            
                                     },
                                     { upsert: true, new: true }
                                 );
@@ -351,6 +346,10 @@ export const startSocket = async (
                                 }
                             }
                         }
+
+                        // Between 15-22PM (3-10PM)
+                        const time = new Date().getHours();
+                        if (time < 15 || time > 22) return;
 
                         // Check weather message is from that perticular group or not
                         const isMessageFromGroup =
@@ -451,10 +450,9 @@ export const startSocket = async (
                         ) {
                             try {
                                 // Existing report of sender
-                                const existingReportOfSender =
-                                    isReportExist.taskReport.find(
-                                        (r) => r.phoneNumber === sender.phoneNumber
-                                    );
+                                const existingReportOfSender = isReportExist.taskReport.find(
+                                    (r) => r.phoneNumber === sender.phoneNumber
+                                );
 
                                 if (
                                     existingReportOfSender &&
@@ -502,8 +500,8 @@ export const startSocket = async (
                                         // Notify the sender
                                         try {
                                             await sock.sendMessage(sender.id, {
-                                                text: `Dear ${sender.name || "Participant"},\nYour ${isReportExist.taskType
-                                                    } task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Coordinator`,
+                                                text: `Dear ${sender.name || "Participant"
+                                                    },\nYour ${isReportExist.taskType.toLowerCase()} task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Report Buddy`,
                                             });
                                         } catch (err) {
                                             console.error(

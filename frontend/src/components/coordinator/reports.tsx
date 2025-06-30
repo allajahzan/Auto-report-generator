@@ -1,15 +1,8 @@
 import API_END_POINTS from "@/constants/api-endpoints";
 import { fetchData } from "@/service/api-service";
 import type { IBatch } from "@/types/batch";
-import { useQuery } from "@tanstack/react-query";
-import {
-    FileText,
-    ListTodo,
-    Menu,
-    ReceiptText,
-    ScanEye,
-    Send,
-} from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Copy, FileText, ListTodo, ReceiptText, ScanEye } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -21,8 +14,14 @@ import { useEffect, useState } from "react";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import NameCard from "../common/name-card";
-import type { IParticipant } from "../auth/modal-select-group";
 import { cn } from "@/lib/utils";
+import { errorHandler } from "@/utils/error-handler";
+import { useNotification } from "@/context/notification-context";
+import { useAuth } from "@/context/auth-context";
+import Loader from "../common/loader";
+import SaveInformation from "./save-information";
+import SaveAttendence from "./save-attendence";
+import NotFound from "../common/not-found";
 
 // Interface for Props
 interface PropsType {
@@ -30,7 +29,7 @@ interface PropsType {
 }
 
 // Interface for participant
-interface IAttendence {
+export interface IAttendence {
     id: string;
     name: string;
     phoneNumber: string;
@@ -42,9 +41,33 @@ function Reports({ data: batch }: PropsType) {
     // Selected students
     const [selectedStudents, setSelectedStudents] = useState<IAttendence[]>([]);
 
+    // Selected task
+    const [task, setTask] = useState<string>("");
+
+    // Selected topic
+    const [topic, setTopic] = useState<string>("");
+
+    // Report details
+    const trainer =
+        batch.participants.find((p) => p.role === "Trainer")?.name || "Unknown";
+    const coordinator =
+        batch.participants.find((p) => p.phoneNumber === batch.coordinatorId)
+            ?.name || "Unknown";
+
+    // Query client
+    const queryClient = useQueryClient();
+
+    // Notification context
+    const { notify } = useNotification();
+
+    // Auth context
+    const { setConnection, clearAuth } = useAuth();
+
     // Toggle student selection
     const toggleStudentSelection = (studentJson: string) => {
         const student = JSON.parse(studentJson); // convert to object
+
+        console.log(student);
 
         setSelectedStudents((prev) => {
             const isAlreadySelected = prev.some((s) => s.id === student.id);
@@ -59,230 +82,360 @@ function Reports({ data: batch }: PropsType) {
         });
     };
 
-    // Send report
-    const handleSend = () => { };
+    // Handle copy
+    const handleCopy = () => {
+        const submitted = batch.participants
+            .filter(
+                (p) =>
+                    p.role === "Student" && selectedStudents.some((s) => s.id === p.id)
+            )
+            .map((p) => `${p.name}: ✅`)
+            .join("\n");
+
+        const notSubmitted = batch.participants
+            .filter(
+                (p) =>
+                    p.role === "Student" && !selectedStudents.some((s) => s.id === p.id)
+            )
+            .map((p) => `${p.name}: ❌`)
+            .join("\n");
+
+        const text = `
+            ${data?.taskType
+                ? `${data.taskType} task report`
+                : "Daily task report"
+            }
+            🎓BATCH: ${batch.batchName}
+            📅Date: ${data?.date
+                ? new Date(data.date).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                })
+                : new Date().toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                })
+            }
+            👨‍🏫Trainer: ${trainer}
+            🎤Coordinator: ${coordinator}
+            📝Topic: ${data?.taskTopic || "Not mentioned"}
+
+            Submitted:-
+            ${submitted}
+
+            Not submitted:-
+            ${notSubmitted}
+    `.trim();
+
+        navigator.clipboard
+            .writeText(text)
+            .then(() => notify("Task report copied to clipboard ✅"))
+            .catch(() => notify("Task report failed to copy ❌"));
+    };
 
     // useQuery for fetching reports
-    const { data, isLoading, error, refetch } = useQuery({
+    const { data, error, isLoading, refetch } = useQuery({
         queryKey: ["report"],
         queryFn: async () => {
             const resp = await fetchData(
                 API_END_POINTS.REPORT +
-                `?batchId=${batch._id}&coordinatorId=${batch.coordinatorId}`
+                `?batchId=${batch._id}&coordinatorId=${batch.coordinatorId}&groupId=${batch.groupId}`
             );
 
             if (resp && resp.status === 200) {
-                return resp.data?.data;
+                return resp.data?.data || "";
             }
         },
+        staleTime: 0,
+        refetchOnMount: true,
         retry: false,
     });
 
+    // Handle error
+    useEffect(() => {
+        if (error) {
+            errorHandler(error, notify, setConnection, clearAuth);
+        }
+    }, [error]);
+
+    // Set selected students
+    useEffect(() => {
+        if (data) {
+            setSelectedStudents(
+                data.taskReport
+                    .filter((sr: IAttendence) => sr.isCompleted)
+                    .map((sr: IAttendence) => {
+                        return {
+                            id: sr.id,
+                            name: sr.name,
+                            phoneNumber: sr.phoneNumber,
+                            isCompleted: sr.isCompleted,
+                        };
+                    })
+            );
+
+            setTask(data?.taskType || "");
+            setTopic(data?.taskTopic || "");
+        }
+    }, [data, batch]);
+
+    // Fetch report
     useEffect(() => {
         refetch();
+
+        // Clean up
+        return () => {
+            queryClient.removeQueries({ queryKey: ["report"] });
+        };
     }, [batch]);
 
     return (
         <>
-            <div className="relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
-                {/* Title */}
-                <div className="flex justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
-                            <FileText className="w-4 h-4" />
-                        </div>
-                        <h1 className="text-lg font-extrabold text-white tracking-wide">
-                            Reports
-                        </h1>
-                    </div>
-
-                    <div className="hidden absolute right-5 top-5">
-                        <Select defaultValue={data?.taskType || "daily-task-report"}>
-                            <SelectTrigger
-                                id="role"
-                                className="relative text-white text-sm font-medium p-5 pl-9 
-                                border border-zinc-800 hover:border-zinc-600 hover:bg-my-bg-light cursor-pointer"
-                            >
-                                <SelectValue placeholder="Select a report" />
-                                <Menu className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-my-bg-light border border-zinc-800 text-white">
-                                <SelectItem value="daily-task-report">
-                                    Daily Task Report
-                                </SelectItem>
-                                <SelectItem value="session-report">Sesson Report</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+            {isLoading && (
+                <div className="h-[260px] w-full flex items-center justify-center">
+                    <Loader />
                 </div>
-
-                {/* Report form */}
-                <form className="flex flex-col gap-2">
-                    <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="taskType"
-                                className="text-xs text-white font-medium"
-                            >
-                                Task Type
-                            </Label>
-                            <Select
-                            // defaultValue={prole}
-                            >
-                                <SelectTrigger
-                                    id="taskType"
-                                    className="relative w-full text-white text-sm font-medium p-5 pl-9 
-                                border border-zinc-800 hover:border-zinc-600 hover:bg-my-bg-light cursor-pointer"
-                                >
-                                    <SelectValue placeholder="Select a type" />
-                                    <ListTodo className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-my-bg-light border border-zinc-800 text-white">
-                                    <SelectItem value="Audio">Audio</SelectItem>
-                                    <SelectItem value="Writing">Writing</SelectItem>
-                                    <SelectItem value="Listening">Listening</SelectItem>
-                                </SelectContent>
-                            </Select>
-
-                            {/* Error */}
-                            {/* <ValidationError error={errors.pnumber?.message || ""} /> */}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label
-                                htmlFor="taskTopic"
-                                className="text-xs text-white font-medium"
-                            >
-                                Topic
-                            </Label>
-                            <div className="relative flex-1">
-                                <Input
-                                    id="taskTopic"
-                                    tabIndex={-1}
-                                    autoComplete="off"
-                                    // {...register("pnumber")}
-                                    placeholder={`Enter topic`}
-                                    className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 hover:bg-my-bg-light"
-                                />
-                                <ReceiptText className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
+            )}
+            {!isLoading && (
+                <>
+                    <div className="relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
+                        {/* Title */}
+                        <div className="flex justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                                <h1 className="text-lg font-extrabold text-white tracking-wide">
+                                    Task Information
+                                </h1>
                             </div>
 
-                            {/* Error */}
-                            {/* <ValidationError error={errors.pnumber?.message || ""} /> */}
+                            {/* Save */}
+                            <SaveInformation
+                                batch={batch}
+                                reportInfo={{
+                                    taskType: task,
+                                    taskTopic: topic,
+                                }}
+                            />
                         </div>
+
+                        {/* Report form */}
+                        <form className="flex flex-col gap-2">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="taskType"
+                                        className="text-xs text-white font-medium"
+                                    >
+                                        Task Type
+                                    </Label>
+                                    <Select
+                                        value={task || data?.taskType || ""}
+                                        onValueChange={(value) => setTask(value)}
+                                    >
+                                        <SelectTrigger
+                                            id="taskType"
+                                            className="relative w-full text-white text-sm font-medium p-5 pl-9 
+                                border border-zinc-800 hover:border-zinc-600 hover:bg-my-bg-light cursor-pointer"
+                                        >
+                                            <SelectValue placeholder="Select a type" />
+                                            <ListTodo className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-my-bg-light border border-zinc-800 text-white">
+                                            <SelectItem value="Audio">Audio</SelectItem>
+                                            <SelectItem value="Writing">Writing</SelectItem>
+                                            <SelectItem value="Listening">Listening</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+
+                                    {/* Error */}
+                                    {/* <ValidationError error={errors.pnumber?.message || ""} /> */}
+                                </div>
+
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="taskTopic"
+                                        className="text-xs text-white font-medium"
+                                    >
+                                        Topic
+                                    </Label>
+                                    <div className="relative flex-1">
+                                        <Input
+                                            id="taskTopic"
+                                            tabIndex={-1}
+                                            autoComplete="off"
+                                            value={topic || ""}
+                                            onChange={(e) => setTopic(e.target.value)}
+                                            placeholder={`Enter topic`}
+                                            className="text-white text-sm font-medium p-5 pl-9 border border-zinc-800 hover:border-zinc-600 hover:bg-my-bg-light"
+                                        />
+                                        <ReceiptText className="w-4 h-4 absolute left-3 top-[13px] text-muted-foreground" />
+                                    </div>
+
+                                    {/* Error */}
+                                    {/* <ValidationError error={errors.pnumber?.message || ""} /> */}
+                                </div>
+                            </div>
+                        </form>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label
-                            htmlFor="students"
-                            className="text-xs text-white font-medium"
-                        >
-                            Students
-                        </Label>
+                    {/* Attendence */}
+                    <div className="relative w-full h-full p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
+                        <div className="flex justify-between">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                                <h1 className="text-lg font-extrabold text-white tracking-wide">
+                                    Task Attendence
+                                </h1>
+                            </div>
 
-                        {batch?.participants.length > 0 && (
-                            <div
-                                id="students"
-                                className="grid grid-cols-1 md:grid-cols-2 gap-3"
-                            >
+                            {/* Save attendence */}
+                            <SaveAttendence
+                                batch={batch}
+                                selectedStudents={selectedStudents}
+                            />
+                        </div>
+
+                        {/* Students */}
+                        {batch?.participants.filter((p) => p.role === "Student").length >
+                            0 && (
+                                <div className="space-y-2">
+                                    <Label
+                                        htmlFor="students"
+                                        className="text-xs text-white font-medium"
+                                    >
+                                        Students
+                                    </Label>
+
+                                    {/* Hidden input */}
+                                    <input id="students" className="hidden" />
+
+                                    <div
+                                        id="students"
+                                        className="grid grid-cols-1 md:grid-cols-2 gap-3"
+                                    >
+                                        {batch.participants
+                                            .filter((p) => p.role === "Student")
+                                            .map((p, index) => {
+                                                const isSelected = selectedStudents.some(
+                                                    (s) => s.id === p.id
+                                                );
+
+                                                return (
+                                                    <div
+                                                        key={index}
+                                                        onClick={() =>
+                                                            toggleStudentSelection(
+                                                                JSON.stringify({
+                                                                    id: p.id,
+                                                                    name: p.name,
+                                                                    phoneNumber: p.phoneNumber,
+                                                                    isCompleted: isSelected,
+                                                                })
+                                                            )
+                                                        }
+                                                        className={cn(
+                                                            "flex flex-col gap-5 p-3 border border-transparent rounded-lg shadow bg-my-bg-dark cursor-pointer",
+                                                            isSelected ? "border border-white" : ""
+                                                        )}
+                                                    >
+                                                        <NameCard
+                                                            data={{
+                                                                id: p.id,
+                                                                name: p.name,
+                                                                profilePic: p.profilePic,
+                                                                role: p.role,
+                                                                phoneNumber: p.phoneNumber,
+                                                            }}
+                                                            showRole={false}
+                                                            isMoreOption={false}
+                                                        />
+                                                    </div>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            )}
+
+                        {/* If not students */}
+                        {batch?.participants.filter((p) => p.role === "Student").length ===
+                            0 && <NotFound message="No students found" />}
+                    </div>
+
+                    {/* Previews */}
+                    {data && (
+                        <div className="relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
+                                        <ScanEye className="w-4 h-4" />
+                                    </div>
+                                    <h1 className="text-lg font-extrabold text-white tracking-wide">
+                                        Preview
+                                    </h1>
+                                </div>
+
+                                <div
+                                    onClick={handleCopy}
+                                    className="p-2 text-white cursor-pointer"
+                                >
+                                    <Copy className="w-4 h-4" />
+                                </div>
+                            </div>
+
+                            {/*  */}
+                            <div className="flex flex-col text-sm text-white font-mediums font-mono">
+                                <p>
+                                    {data?.taskType
+                                        ? `${data?.taskType} task report`
+                                        : "Daily task report"}
+                                </p>
+                                <p>🎓BATCH: {batch.batchName}</p>
+                                <p>
+                                    📅Date:
+                                    {data?.date
+                                        ? new Date(data.date).toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                        })
+                                        : new Date().toLocaleDateString("en-GB", {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                        })}
+                                </p>
+                                <p>👨‍🏫Trainer: {trainer}</p>
+                                <p>🎤Coordinator: {coordinator}</p>
+                                <p>📝Topic: {data?.taskTopic || "Not mentioned"}</p>
+                                <br />
+                                <p>Submitted:-</p>
                                 {batch.participants
                                     .filter((p) => p.role === "Student")
-                                    .map((p, index) => {
-                                        const isSelected = selectedStudents.some(
-                                            (s) => s.id === p.id
-                                        );
-
-                                        return (
-                                            <div
-                                                key={index}
-                                                onClick={() =>
-                                                    toggleStudentSelection(
-                                                        JSON.stringify({
-                                                            id: p.id,
-                                                            name: p.name,
-                                                            phoneNumber: p.phoneNumber,
-                                                            isCompleted: isSelected,
-                                                        })
-                                                    )
-                                                }
-                                                className={cn(
-                                                    "flex flex-col gap-5 p-3 border border-transparent rounded-lg shadow bg-my-bg-dark cursor-pointer",
-                                                    isSelected ? "border border-white" : ""
-                                                )}
-                                            >
-                                                <NameCard
-                                                    data={{
-                                                        id: p.id,
-                                                        name: p.name,
-                                                        profilePic: p.profilePic,
-                                                        role: p.role,
-                                                        phoneNumber: p.phoneNumber,
-                                                    }}
-                                                    showRole={false}
-                                                    isMoreOption={false}
-                                                />
-                                            </div>
-                                        );
+                                    .map((p) => {
+                                        if (selectedStudents.some((s) => s.id === p.id)) {
+                                            return <p key={p.id}>{p.name}: ✅</p>;
+                                        }
+                                    })}
+                                <br />
+                                <p>Not submitted:-</p>
+                                {batch.participants
+                                    .filter((p) => p.role === "Student")
+                                    .map((p) => {
+                                        if (!selectedStudents.some((s) => s.id === p.id)) {
+                                            return <p key={p.id}>{p.name}: ❌</p>;
+                                        }
                                     })}
                             </div>
-                        )}
-                    </div>
-                </form>
-            </div>
-
-            {/* Previews */}
-            <div className="relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="p-2 rounded-full bg-zinc-800 text-white cursor-pointer">
-                            <ScanEye className="w-4 h-4" />
                         </div>
-                        <h1 className="text-lg font-extrabold text-white tracking-wide">
-                            Preview
-                        </h1>
-                    </div>
-
-                    <div onClick={handleSend} className="p-2 text-white cursor-pointer">
-                        <Send className="w-4 h-4" />
-                    </div>
-                </div>
-
-                {/*  */}
-                <div className="flex flex-col text-sm text-white font-mediums font-mono">
-                    <p>Audio task report || Task report</p>
-                    <p>🎓BATCH: {batch.batchName}</p>
-                    <p>📅Date: {new Date().toLocaleDateString()}</p>
-                    <p>
-                        👨‍🏫Trainer:{" "}
-                        {(
-                            batch.participants.find(
-                                (p) => p.role === "Trainer"
-                            ) as IParticipant
-                        )?.name || "Unknown"}
-                    </p>
-                    <p>
-                        🎤Coordinator:{" "}
-                        {(
-                            batch.participants.find(
-                                (p) => p.phoneNumber === batch.coordinatorId
-                            ) as IParticipant
-                        )?.name || "Unknown"}
-                    </p>
-                    <p>📝Topic: {"asdf"}</p>
-                    <br />
-                    <p>Submitted:-</p>
-                    {batch.participants.map((p) => {
-                        if (selectedStudents.find((s) => s.id === p.id))
-                            return <p>{p.name}:✅</p>;
-                    })}
-                    <br />
-                    <p>Not submitted:-</p>
-                    {batch.participants.map((p) => {
-                        if (!selectedStudents.find((s) => s.id === p.id))
-                            return <p>{p.name}:❌</p>;
-                    })}
-                </div>
-            </div>
+                    )}
+                </>
+            )}
         </>
     );
 }

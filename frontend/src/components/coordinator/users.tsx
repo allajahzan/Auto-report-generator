@@ -56,7 +56,12 @@ function Users({ data }: PropsType) {
                 <div className="flex flex-col gap-2">
                     {data.participants.map((p: any, index: number) => (
                         <div key={index} className="p-3 bg-my-bg-dark rounded-lg shadow">
-                            <NameCard key={p.id} data={p} isMoreOption={true} />
+                            <NameCard
+                                key={p.id}
+                                data={p}
+                                isMoreOption={true}
+                                showRole={true}
+                            />
                         </div>
                     ))}
                 </div>

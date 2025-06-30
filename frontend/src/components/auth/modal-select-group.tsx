@@ -159,14 +159,14 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
                 onClick={(e) => e.preventDefault()}
-                className="w-full sm:max-w-xl flex flex-col gap-10 bg-my-bg border border-zinc-800 h-[86vh]"
+                className="w-full sm:max-w-xl flex flex-col gap-10 bg-my-bg border border-zinc-800 h-[86vh] text-white"
             >
                 <DialogHeader>
                     <DialogTitle className="text-white text-base flex items-center gap-3 text-start w-[calc(100%-5%)]">
                         <span>
                             {!selectedGroup
                                 ? "Select a WhatsApp group to be tracked by Report Buddy."
-                                : "Complete the form below to proceed."}
+                                : "Complete the form below to proceed (Name is optional)."}
                         </span>
                     </DialogTitle>
                     <DialogDescription className="text-muted-foreground font-medium text-xs text-start">

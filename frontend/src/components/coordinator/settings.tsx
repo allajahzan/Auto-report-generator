@@ -10,7 +10,7 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "@/context/auth-context";
 import { useNotification } from "@/context/notification-context";
 import { errorHandler } from "@/utils/error-handler";
-import ConfirmModal from "./modal-confirm-delete";
+import ConfirmModal from "./modal-confirm-logout";
 
 // Interface for props
 interface PropsType {

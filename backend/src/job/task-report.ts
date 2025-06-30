@@ -49,7 +49,7 @@ export const scheduleTaskReportSharing = async (
                 date: dateStr,
             });
 
-            if(!isReportExist) return;
+            if (!isReportExist) return;
 
             // If report of this batch exists,
             const taskReport = isReportExist?.taskReport || [];
@@ -78,6 +78,7 @@ export const scheduleTaskReportSharing = async (
                 month: "2-digit",
                 year: "numeric",
             });
+
             const coordinator = participants.find(
                 (p) => p.phoneNumber === phoneNumber
             );
@@ -86,7 +87,7 @@ export const scheduleTaskReportSharing = async (
             // audio task report => text
             let text = `${isReportExist?.taskType
                     ? `${isReportExist.taskType + " " + "task"}`
-                    : "Task"
+                    : "Dailt task"
                 } report\n🎓BATCH: ${batch.batchName
                 }\n📅Date: ${formattedDate}\n👨‍🏫Trainer: ${trainer?.name || "Unknown"
                 }\n🎤Coordinator: ${coordinator?.name || "Unknown"}\n📝Topic: ${isReportExist?.taskTopic || "Not mentioned"
