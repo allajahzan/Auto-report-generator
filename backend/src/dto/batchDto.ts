@@ -1,5 +1,6 @@
 // Dto for batch
 export interface IBatchDto {
+    _id: string;
     coordinatorId: string;
     groupId: string;
     batchName: string;

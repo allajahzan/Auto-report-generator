@@ -82,7 +82,7 @@ function ConfirmSelectModal({
             localStorage.setItem("groupId", selectedGroup?.id || "");
             setGroupId(selectedGroup?.id || "");
 
-            notify("You have successfully selected the WhatsApp group 👏");
+            notify("Successfully selected the WhatsApp group 👏");
             setOpen(false);
         },
         onError: (error) => {

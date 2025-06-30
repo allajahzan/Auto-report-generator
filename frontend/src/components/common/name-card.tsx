@@ -57,13 +57,13 @@ function NameCard({ data, showRole, isMoreOption }: PropsType) {
                         {data.role || "Paricipant"}
                     </Badge> */}
                 </div>
-                <p className="text-xs text-white font-medium tracking-wide flex items-center w-full truncate">
+                <p className="text-xs text-white font-medium tracking-wide flex items-center w-full truncate h-6">
                     <span className="flex items-center gap-1">
                         <Phone className="w-3 h-3 shrink-0" />
                         {data.phoneNumber}
                     </span>
 
-                    {showRole && (
+                    {showRole && data.role && (
                         <>
                             <Dot />
                             <span className="flex items-center gap-1">

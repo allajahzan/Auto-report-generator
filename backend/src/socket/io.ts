@@ -45,6 +45,9 @@ export const connectSocketIO = (server: http.Server) => {
                             const socketId = activeUsers[phoneNumber];
                             console.log(socketId, "socketId to emit BOT status");
 
+                            console.log(message);
+                            
+
                             if (socketId) {
                                 io.to(socketId).emit("bot-status", status, message, groupId);
                             }

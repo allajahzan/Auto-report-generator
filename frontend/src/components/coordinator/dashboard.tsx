@@ -6,12 +6,12 @@ import {
     Calendar,
     Dot,
     FileText,
+    Link,
     Pencil,
-    RotateCw,
     Settings2,
     UsersRound,
 } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/auth-context";
@@ -30,8 +30,6 @@ function DashboardCoordinator() {
     const params = useParams();
     const phoneNumber = params.phoneNumber;
     const groupId = params.groupId;
-
-    const reloadRef = useRef<HTMLParagraphElement>(null);
 
     // Query client
     const queryClient = useQueryClient();
@@ -95,24 +93,16 @@ function DashboardCoordinator() {
                         "Something went wrong, please try again later!"
                     </p>
                     <Button
-                        onClick={() => {
-                            if (reloadRef.current) {
-                                reloadRef.current.style.rotate = "360deg";
-                                reloadRef.current.style.transition = "0.5s";
-                            }
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 500);
-                        }}
+                        onClick={() => clearAuth()}
                         type="button"
                         className="h-11 w-full sm:w-44 text-center cursor-pointer disabled:cursor-not-allowed shadow-none 
                         bg-transparent hover:bg-transparent text-white"
                     >
                         <span className="flex items-center gap-2">
-                            <p ref={reloadRef}>
-                                <RotateCw className="w-5 h-5" />
+                            <p>
+                                <Link className="w-5 h-5" />
                             </p>
-                            <p>Reload</p>
+                            <p>Go Connect Again</p>
                         </span>
                     </Button>
                 </div>
@@ -179,7 +169,7 @@ function DashboardCoordinator() {
                                 className="text-white px-4 py-4 cursor-pointer"
                                 value="reports"
                             >
-                                <FileText /> Reports
+                                <FileText /> Report
                             </TabsTrigger>
 
                             <TabsTrigger
@@ -197,7 +187,7 @@ function DashboardCoordinator() {
 
                         {/* Reports */}
                         <TabsContent value="reports" className="flex flex-col gap-2">
-                            <Reports data={data}/>
+                            <Reports data={data} />
                         </TabsContent>
 
                         {/* Settings */}

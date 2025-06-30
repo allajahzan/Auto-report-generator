@@ -5,11 +5,9 @@ import {
     ConflictError,
     ForbiddenError,
     NotFoundError,
-    UnauthorizedError,
 } from "@codeflare/common";
 import { getSocket, removeSocket } from "../../bot/socket-store";
 import { IBatchDto, IParticipantDto } from "../../dto/batchDto";
-import fs from "fs";
 import { IBatchSchema } from "../../entities/IBatchSchema";
 
 // Implementation for Batch Service
@@ -39,6 +37,7 @@ export class BatchService implements IBatchService {
 
             // Map data to return type
             const batchDto: IBatchDto = {
+                _id: batch._id as unknown as string,
                 coordinatorId,
                 groupId,
                 batchName: batch.batchName,
@@ -207,7 +206,7 @@ export class BatchService implements IBatchService {
                         participants: data.participants,
                     },
                 },
-                { upsert: true }
+                { upsert: true, new: true }
             );
 
             if (!updatedBatch) throw new BadRequestError("Failed to select group");
@@ -222,7 +221,8 @@ export class BatchService implements IBatchService {
             // Remove coordinatorId
             const updatedBatch = await this.batchRepository.update(
                 { groupId, coordinatorId },
-                { $unset: { coordinatorId: 1 } }
+                { $unset: { coordinatorId: 1 } },
+                { new: true }
             );
 
             if (!updatedBatch) throw new BadRequestError("Failed to disconnect");
