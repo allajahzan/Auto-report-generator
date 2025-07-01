@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { IBatchSchema } from "../entities/IBatchSchema";
+import { IBatchSchema } from "../entities";
 
 // Implementation of Batch Schema
 const batchSchema = new Schema<IBatchSchema>(
@@ -52,5 +52,4 @@ const batchSchema = new Schema<IBatchSchema>(
     { timestamps: true }
 );
 
-const Batch = model<IBatchSchema>("Batch", batchSchema);
-export default Batch;
+export const Batch = model<IBatchSchema>("Batch", batchSchema);

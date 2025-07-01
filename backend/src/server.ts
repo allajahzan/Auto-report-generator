@@ -3,24 +3,24 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import app from "./app";
-import { isEnvDefined } from "./utils/env-checker";
 import { MongodbConnection } from "@codeflare/common";
 import http from "http";
-import { connectSocketIO } from "./socket/io";
-import { startSocketOnServerStart } from "./bot/baileys";
+import { validateEnv } from "./utils";
+import { startBaileysSockets } from "./bot";
+import { connectSocketIO } from "./socket";
 
 // server
 const startServer = async () => {
     try {
-        // check all env are defined
-        isEnvDefined();
+        // validate envs
+        validateEnv();
 
         // connect to mongodb
         const db = new MongodbConnection(process.env.MONGO_DB_URL as string);
         await db.retryConnection();
 
         // Start baileys sockets
-        startSocketOnServerStart();
+        startBaileysSockets();
 
         // Server
         const server = http.createServer(app);

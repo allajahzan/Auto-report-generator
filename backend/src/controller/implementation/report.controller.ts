@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { IReportService } from "../../service/interface/IReportService";
-import { IRreportController } from "../interface/IReportController";
 import {
     HTTPStatusCode,
     ResponseMessage,
     SendResponse,
 } from "@codeflare/common";
+import { IRreportController } from "../interface";
+import { IReportService } from "../../service/interface";
 
 // Implementation for Report Controller
 export class ReportController implements IRreportController {

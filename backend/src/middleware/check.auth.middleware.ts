@@ -4,9 +4,7 @@ import {
 } from "@codeflare/common";
 import { Request, Response, NextFunction } from "express";
 import fs from "fs";
-import { getSocket } from "../bot/socket-store";
-import { BatchRepository } from "../repository/implementation/batchRepository";
-import Batch from "../model/batchSchema";
+import { getSocket } from "../bot";
 
 export const checkAuth = async (
     req: Request,

@@ -1,9 +1,10 @@
 import { WASocket } from "@whiskeysockets/baileys";
-import Batch from "../model/batchSchema";
-import Report from "../model/reportSchema";
-import { BatchRepository } from "../repository/implementation/batchRepository";
-import { ReportRepository } from "../repository/implementation/reportRepository";
 import schedule from "node-schedule";
+import {
+    BatchRepository,
+    ReportRepository,
+} from "../repository/implementation";
+import { Batch, Report } from "../model";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);
@@ -11,8 +12,8 @@ const batchRepository = new BatchRepository(Batch);
 // Report repository
 const reportRepository = new ReportRepository(Report);
 
-// Schedule task report sharing
-export const scheduleTaskReportSharing = async (
+// Schedule task report
+export const scheduleTaskReport = async (
     phoneNumber: string,
     sock: WASocket
 ) => {

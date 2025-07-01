@@ -1,4 +1,4 @@
-import { IReportDto } from "../../dto/reportDto";
+import { IReportDto } from "../../dtos/report.dtos";
 
 // Interface for Report Service
 export interface IReportService {

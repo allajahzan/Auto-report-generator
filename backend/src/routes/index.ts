@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { batchRoute } from "./batchRoute";
-import { reportRoute } from "./reportRoute";
+import { batchRoute } from "./batch.route";
+import { reportRoute } from "./report.route";
 
 const router = Router();
 

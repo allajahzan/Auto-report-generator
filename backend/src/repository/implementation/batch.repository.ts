@@ -1,7 +1,7 @@
 import { BaseRepository } from "@codeflare/common";
-import { IBatchRepository } from "../interface/IBatchRepository";
-import { IBatchSchema } from "../../entities/IBatchSchema";
 import { Model } from "mongoose";
+import { IBatchSchema } from "../../entities";
+import { IBatchRepository } from "../interface";
 
 // Implementation for Batch Repository 
 export class BatchRepository

@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { BatchService } from "../service/implementation/batchService";
-import { BatchController } from "../controller/implementation/batchController";
-import { BatchRepository } from "../repository/implementation/batchRepository";
-import Batch from "../model/batchSchema";
-import { checkBatch } from "../middleware/check-batch";
+import { BatchRepository } from "../repository/implementation";
+import { BatchService } from "../service/implementation";
+import { BatchController } from "../controller/implementation";
+import { Batch } from "../model";
+import { checkBatch } from "../middleware";
 
 const router = Router();
 

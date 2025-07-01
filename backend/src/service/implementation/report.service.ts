@@ -1,7 +1,7 @@
 import { BadRequestError } from "@codeflare/common";
-import { IReportDto } from "../../dto/reportDto";
-import { IReportRepository } from "../../repository/interface/IReportRepository";
-import { IReportService } from "../interface/IReportService";
+import { IReportService } from "../interface";
+import { IReportRepository } from "../../repository/interface";
+import { IReportDto } from "../../dtos";
 
 // Implementation for Report Service
 export class ReportService implements IReportService {
