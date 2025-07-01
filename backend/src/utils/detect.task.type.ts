@@ -13,10 +13,3 @@ export const detectTaskType = (text: string): string | null => {
     }
     return null;
 };
-
-const topicRegex = /topic:/i;
-
-// Detext isTopic
-export const detectIsTopic = (text: string): boolean => {
-    return topicRegex.test(text);
-};

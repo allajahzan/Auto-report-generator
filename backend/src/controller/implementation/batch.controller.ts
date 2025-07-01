@@ -1,11 +1,11 @@
 import { Request, Response, NextFunction } from "express";
-import { IBatchService } from "../../service/interface/IBatchService";
-import { IBatchController } from "../interface/IBatchController";
 import {
     HTTPStatusCode,
     ResponseMessage,
     SendResponse,
 } from "@codeflare/common";
+import { IBatchController } from "../interface";
+import { IBatchService } from "../../service/interface";
 
 // Implementation for Batch Controller
 export class BatchController implements IBatchController {

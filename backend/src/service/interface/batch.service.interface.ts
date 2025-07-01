@@ -1,5 +1,5 @@
-import { IBatchDto, IParticipantDto } from "../../dto/batchDto";
-import { IBatchSchema } from "../../entities/IBatchSchema";
+import { IBatchDto, IParticipantDto } from "../../dtos/batch.dtos";
+import { IBatchSchema } from "../../entities/batch.schema.interface";
 
 // Interface for Batch Service 
 export interface IBatchService {

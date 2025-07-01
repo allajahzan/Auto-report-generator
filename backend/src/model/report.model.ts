@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IReportSchema } from "../entities/IReportSchema";
+import { IReportSchema } from "../entities";
 
 // Implementation of Report Schema
 const reportSchema = new Schema<IReportSchema>({
@@ -40,5 +40,4 @@ const reportSchema = new Schema<IReportSchema>({
     }
 });
 
-const Report = model<IReportSchema>("Report", reportSchema);
-export default Report;
+export const Report = model<IReportSchema>("Report", reportSchema);

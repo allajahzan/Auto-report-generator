@@ -6,14 +6,15 @@ import makeWASocket, {
 import P from "pino";
 import { Boom } from "@hapi/boom";
 import fs from "fs";
-import { getActiveUsers, getIO } from "../socket/io";
-import { removeSocket, setSocket } from "./socket-store";
-import { BatchRepository } from "../repository/implementation/batchRepository";
-import Batch from "../model/batchSchema";
-import { ReportRepository } from "../repository/implementation/reportRepository";
-import Report from "../model/reportSchema";
-import { scheduleTaskReportSharing } from "../job/task-report";
-import { detectIsTopic, detectTaskType } from "../utils/detectTaskType";
+import {
+    BatchRepository,
+    ReportRepository,
+} from "../repository/implementation";
+import { Batch, Report } from "../model";
+import { getActiveUsers, getIO } from "../socket";
+import { detectIsTopic, detectTaskType } from "../utils";
+import { scheduleTaskReport } from "../job";
+import { removeSocket, setSocket } from ".";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);
@@ -26,8 +27,8 @@ process.on("unhandledRejection", (reason, promise) => {
     console.error("Unhandled Rejection at:", promise, "reason:", reason);
 });
 
-// Start baileys socket
-export const startSocket = async (
+// Start baileys socket - For single user
+export const startBaileysSocket = async (
     phoneNumber: string,
     emitQR: (qr: string) => void,
     emitStatus: (
@@ -37,8 +38,8 @@ export const startSocket = async (
     ) => void
 ) => {
     try {
-        // auth_info
-        const authPath = `src/auth_info/${phoneNumber}`;
+        // auth session
+        const authPath = `src/auth/${phoneNumber}`;
         const { state, saveCreds } = await useMultiFileAuthState(authPath);
 
         const sock = makeWASocket({
@@ -49,7 +50,7 @@ export const startSocket = async (
             shouldSyncHistoryMessage: () => false,
         });
 
-        // Save auth_info
+        // Save auth
         sock.ev.on("creds.update", async () => {
             try {
                 await saveCreds();
@@ -82,7 +83,7 @@ export const startSocket = async (
                         try {
                             fs.rmSync(authPath, { recursive: true, force: true });
                         } catch (err) {
-                            console.error("Error deleting auth_info:", phoneNumber);
+                            console.error("Error deleting auth:", phoneNumber);
                         }
 
                         sock.ws.close();
@@ -218,7 +219,7 @@ export const startSocket = async (
                             try {
                                 fs.rmSync(authPath, { recursive: true, force: true });
                             } catch (err) {
-                                console.error("Error deleting auth_info:", phoneNumber);
+                                console.error("Error deleting auth:", phoneNumber);
                             }
                         }, 3000);
 
@@ -236,9 +237,11 @@ export const startSocket = async (
                             console.log("🔃 Reconnecting BOT:", phoneNumber);
 
                             setTimeout(() => {
-                                startSocket(phoneNumber, emitQR, emitStatus).catch((err) => {
-                                    console.error("Error during reconnection:", phoneNumber);
-                                });
+                                startBaileysSocket(phoneNumber, emitQR, emitStatus).catch(
+                                    (err) => {
+                                        console.error("Error during reconnection:", phoneNumber);
+                                    }
+                                );
                             }, 3000);
 
                             RETRIES++;
@@ -290,16 +293,16 @@ export const startSocket = async (
 
                         if (isSelfMessage) {
                             const taskType = detectTaskType(textMessage);
-                            const isTopic = detectIsTopic(textMessage);
+                            const taskTopic = detectIsTopic(textMessage);
 
-                            if (taskType || isTopic) {
+                            if (taskType || taskTopic) {
                                 console.log("Task Type:", taskType);
-                                console.log("TaskTopic:", isTopic);
+                                console.log("TaskTopic:", taskTopic);
 
                                 const updatedReport = await reportRepository.findOneAndUpdate(
                                     { batchId: batch._id as unknown as string, date: dateStr },
                                     {
-                                        $set: isTopic
+                                        $set: taskTopic
                                             ? { taskTopic: textMessage.split(":")[1].trim() }
                                             : { taskType },
                                     },
@@ -311,7 +314,7 @@ export const startSocket = async (
                                         await sock.sendMessage(
                                             msg.key.remoteJid as string,
                                             {
-                                                text: `Sorry, we couldn’t update the ${isTopic ? "topic" : "task"
+                                                text: `Sorry, we couldn’t update the ${taskTopic ? "topic" : "task"
                                                     } for the day ${new Date(
                                                         dateStr
                                                     ).toLocaleDateString()} ❌.\n\nPlease try again in a few moments or update it directly through the Report Buddy web app.\n\n– Report Buddy`,
@@ -330,7 +333,7 @@ export const startSocket = async (
                                         await sock.sendMessage(
                                             msg.key.remoteJid as string,
                                             {
-                                                text: `${isTopic ? "Topic" : "Task"
+                                                text: `${taskTopic ? "Topic" : "Task"
                                                     } updated for the day ${new Date(
                                                         dateStr
                                                     ).toLocaleDateString()} successfully ✅.\n\n-Report Buddy`,
@@ -528,7 +531,7 @@ export const startSocket = async (
         });
 
         // Schedule task report sharing
-        scheduleTaskReportSharing(phoneNumber, sock);
+        scheduleTaskReport(phoneNumber, sock);
     } catch (err) {
         console.error("Error creating socket or during startup:", phoneNumber);
         emitStatus("error", "Failed connecting to Report Buddy 🤧");
@@ -536,14 +539,14 @@ export const startSocket = async (
     }
 };
 
-// Start socket on server start
-export const startSocketOnServerStart = async () => {
-    const auth_info_dir = "src/auth_info";
+// Start baileys sockets - For existing multiple users
+export const startBaileysSockets = async () => {
+    const auth_info_dir = "src/auth";
 
     try {
-        // Check if auth_info directory exists
+        // Check if auth directory exists
         if (!fs.existsSync(auth_info_dir)) {
-            console.log("auth_info directory doesn't exist, creating it...");
+            console.log("auth directory doesn't exist, creating it...");
             fs.mkdirSync(auth_info_dir, { recursive: true });
             return;
         }
@@ -555,7 +558,7 @@ export const startSocketOnServerStart = async () => {
             return;
         }
 
-        // Start sockets for existing users
+        // Start sockets
         const socketPromises = existingUsers.map(async (phoneNumber) => {
             try {
                 const batch = await batchRepository.findOne({
@@ -566,7 +569,7 @@ export const startSocketOnServerStart = async () => {
 
                 console.log("starting BOT:", phoneNumber);
 
-                await startSocket(
+                await startBaileysSocket(
                     phoneNumber,
                     () => { },
                     (status, message) => { }
@@ -576,7 +579,7 @@ export const startSocketOnServerStart = async () => {
             }
         });
 
-        // Wait for all startSocket to complete (success or fail)
+        // Wait for all startBaileysSocket to complete (success or fail)
         await Promise.allSettled(socketPromises);
 
         // Refresh every 30 minutes
@@ -591,7 +594,7 @@ export const startSocketOnServerStart = async () => {
 
                     console.log("refreshing BOT:", phoneNumber);
 
-                    await startSocket(
+                    await startBaileysSocket(
                         phoneNumber,
                         () => { },
                         () => { }

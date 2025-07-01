@@ -1,7 +1,7 @@
 import { NotFoundError } from "@codeflare/common";
 import { Request, Response, NextFunction } from "express";
-import { BatchRepository } from "../repository/implementation/batchRepository";
-import Batch from "../model/batchSchema";
+import { BatchRepository } from "../repository/implementation";
+import { Batch } from "../model";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);

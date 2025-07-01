@@ -1,14 +1,14 @@
-import { IBatchService } from "../interface/IBatchService";
-import { IBatchRepository } from "../../repository/interface/IBatchRepository";
 import {
     BadRequestError,
     ConflictError,
     ForbiddenError,
     NotFoundError,
 } from "@codeflare/common";
-import { getSocket, removeSocket } from "../../bot/socket-store";
-import { IBatchDto, IParticipantDto } from "../../dto/batchDto";
-import { IBatchSchema } from "../../entities/IBatchSchema";
+import { IBatchService } from "../interface";
+import { IBatchRepository } from "../../repository/interface";
+import { IBatchDto, IParticipantDto } from "../../dtos";
+import { getSocket, removeSocket } from "../../bot";
+import { IBatchSchema } from "../../entities";
 
 // Implementation for Batch Service
 export class BatchService implements IBatchService {
