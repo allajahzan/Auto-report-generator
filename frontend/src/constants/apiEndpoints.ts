@@ -1,4 +1,4 @@
-const API_END_POINTS = {
+export const API_END_POINTS = {
     BATCH : "/batch",
     GROUP: `/batch/group`,
     PARTICIPANT : "/batch/participant",
@@ -6,5 +6,3 @@ const API_END_POINTS = {
     REPORT: "/report",
     ATTENDENCE: "/report/attendence",
 };
-
-export default API_END_POINTS;

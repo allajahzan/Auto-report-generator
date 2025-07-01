@@ -1,5 +1,5 @@
-import type { IBatch } from "@/types/batch";
-import NameCard from "@/components/common/name-card";
+import type { IBatch } from "@/types/IBatch";
+import { NameCard } from "@/components/common/NameCard";
 import { UserRound } from "lucide-react";
 
 // Interface for Props
@@ -7,8 +7,8 @@ interface PropsType {
     data: IBatch;
 }
 
-// Users Component
-function Users({ data }: PropsType) {
+// Users
+export function Users({ data }: PropsType) {
     return (
         <>
             <div className=" relative w-full h-fit p-5 flex flex-col gap-5 bg-my-bg-light rounded-2xl shadow">
@@ -69,5 +69,3 @@ function Users({ data }: PropsType) {
         </>
     );
 }
-
-export default Users;

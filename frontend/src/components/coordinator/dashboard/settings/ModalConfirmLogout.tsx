@@ -7,14 +7,14 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { Button } from "../ui/button";
-import { useNotification } from "@/context/notification-context";
-import { useAuth } from "@/context/auth-context";
+import { Button } from "@/components/ui/button";
+import { useNotification } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
 import { useMutation } from "@tanstack/react-query";
-import { deleteData } from "@/service/api-service";
-import API_END_POINTS from "@/constants/api-endpoints";
+import { deleteData } from "@/service/apiService";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
 import { useParams } from "react-router-dom";
-import { errorHandler } from "@/utils/error-handler";
+import { errorHandler } from "@/utils/errorHandler";
 import { Loader2 } from "lucide-react";
 
 // Interface for Props
@@ -22,8 +22,8 @@ interface PropsType {
     children: ReactNode;
 }
 
-// Confirm modal Component
-function ConfirmModal({ children }: PropsType) {
+// Confirm logout modal
+export function ModalConfirmLogout({ children }: PropsType) {
     // Params
     const params = useParams();
     const phoneNumber = params.phoneNumber;
@@ -124,5 +124,3 @@ function ConfirmModal({ children }: PropsType) {
         </Dialog>
     );
 }
-
-export default ConfirmModal;

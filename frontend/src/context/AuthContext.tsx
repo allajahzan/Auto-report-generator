@@ -1,4 +1,4 @@
-import { refreshSocket } from "@/socket/io";
+import { refreshSocket } from "@/socket/notification.socket";
 import {
     createContext,
     useContext,
@@ -6,7 +6,7 @@ import {
     useState,
     type ReactNode,
 } from "react";
-import { useNotification } from "./notification-context";
+import { useNotification } from "./NotificationContext";
 
 // Interface for Auth context
 export interface IAuthContext {

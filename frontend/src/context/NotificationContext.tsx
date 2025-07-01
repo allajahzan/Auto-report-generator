@@ -1,4 +1,4 @@
-import { sonnerStyle } from "@/constants/sonner-style";
+import { sonnerStyle } from "@/constants/sonnerStyle";
 import {
     createContext,
     useContext,
@@ -16,7 +16,7 @@ interface INotification {
 }
 
 // Interface for Notification context
-export interface INotificationContext {
+interface INotificationContext {
     notify: (msg: string) => void;
 }
 
@@ -32,7 +32,7 @@ export const useNotification = () => {
 };
 
 // Notification context provider
-function NotificationContextProvider({ children }: { children: ReactNode }) {
+export function NotificationContextProvider({ children }: { children: ReactNode }) {
     const isMobile = useMediaQuery({ query: "(max-width: 620px)" });
 
     const [notification, setNotification] = useState<INotification | null>(null);
@@ -56,5 +56,3 @@ function NotificationContextProvider({ children }: { children: ReactNode }) {
         </NotificationContext.Provider>
     );
 }
-
-export default NotificationContextProvider;

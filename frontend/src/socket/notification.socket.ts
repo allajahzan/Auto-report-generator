@@ -1,5 +1,5 @@
-import type { IGroup } from "@/components/auth/modal-select-group";
-import { BASE_URL } from "@/constants/base-url";
+import type { IGroup } from "@/components/auth/ModalSelectGroup";
+import { BASE_URL } from "@/constants/baseUrl";
 import io from "socket.io-client";
 
 export const socket = io(BASE_URL);

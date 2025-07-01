@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import profile from "@/assets/images/groups.svg";
-import type { IGroup } from "./modal-select-group";
+import type { IGroup } from "./ModalSelectGroup";
 
 // Interface for Props
 interface PropsType {
@@ -14,7 +14,7 @@ interface PropsType {
 }
 
 // Gorup list Component
-function GroupList({
+export function GroupList({
     index,
     action,
     group,
@@ -54,5 +54,3 @@ function GroupList({
         </motion.div>
     );
 }
-
-export default GroupList;

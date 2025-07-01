@@ -1,6 +1,6 @@
-import API_END_POINTS from "@/constants/api-endpoints";
-import { fetchData } from "@/service/api-service";
-import type { IBatch } from "@/types/batch";
+import { API_END_POINTS} from "@/constants/apiEndpoints";
+import { fetchData } from "@/service/apiService";
+import type { IBatch } from "@/types/IBatch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, FileText, ListTodo, ReceiptText, ScanEye } from "lucide-react";
 import {
@@ -9,35 +9,28 @@ import {
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "../ui/select";
+} from "@/components/ui/select";
 import { useEffect, useState } from "react";
-import { Input } from "../ui/input";
-import { Label } from "../ui/label";
-import NameCard from "../common/name-card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { NameCard } from "@/components/common/NameCard";
 import { cn } from "@/lib/utils";
-import { errorHandler } from "@/utils/error-handler";
-import { useNotification } from "@/context/notification-context";
-import { useAuth } from "@/context/auth-context";
-import Loader from "../common/loader";
-import SaveInformation from "./save-information";
-import SaveAttendence from "./save-attendence";
-import NotFound from "../common/not-found";
+import { errorHandler } from "@/utils/errorHandler";
+import { useNotification } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
+import { Loader } from "@/components/common/Loader";
+import { SaveInformation } from "./SaveInformation";
+import { SaveAttendence } from "./SaveAttendence";
+import { NotFound } from "@/components/common/NotFound";
+import type { IAttendence } from "@/types/IAttendence";
 
 // Interface for Props
 interface PropsType {
     data: IBatch;
 }
 
-// Interface for participant
-export interface IAttendence {
-    id: string;
-    name: string;
-    phoneNumber: string;
-    isCompleted: boolean;
-}
-
-// Reports Component
-function Reports({ data: batch }: PropsType) {
+// Reports
+export function Reports({ data: batch }: PropsType) {
     // Selected students
     const [selectedStudents, setSelectedStudents] = useState<IAttendence[]>([]);
 
@@ -439,5 +432,3 @@ function Reports({ data: batch }: PropsType) {
         </>
     );
 }
-
-export default Reports;

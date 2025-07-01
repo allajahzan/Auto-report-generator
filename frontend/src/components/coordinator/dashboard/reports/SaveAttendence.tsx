@@ -1,14 +1,14 @@
-import API_END_POINTS from "@/constants/api-endpoints";
-import { useAuth } from "@/context/auth-context";
-import { useNotification } from "@/context/notification-context";
-import { patchData } from "@/service/api-service";
-import type { IBatch } from "@/types/batch";
-import { errorHandler } from "@/utils/error-handler";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
+import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
+import { patchData } from "@/service/apiService";
+import type { IBatch } from "@/types/IBatch";
+import { errorHandler } from "@/utils/errorHandler";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 import { useEffect } from "react";
-import type { IAttendence } from "./reports";
 import { cn } from "@/lib/utils";
+import type { IAttendence } from "@/types/IAttendence";
 
 // Interface for Props
 interface PropsType {
@@ -16,8 +16,8 @@ interface PropsType {
     selectedStudents: IAttendence[];
 }
 
-// Save information
-function SaveAttendence({ batch, selectedStudents }: PropsType) {
+// Save attendence
+export function SaveAttendence({ batch, selectedStudents }: PropsType) {
     // Query client
     const queryClient = useQueryClient();
 
@@ -105,5 +105,3 @@ function SaveAttendence({ batch, selectedStudents }: PropsType) {
         </div>
     );
 }
-
-export default SaveAttendence;

@@ -1,9 +1,9 @@
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
 import { Outlet } from "react-router-dom";
 
-// Common layout Component
-function CommonLayout() {
+// Common layout
+export function CommonLayout() {
     // Auth context
     const { connection } = useAuth();
 
@@ -46,5 +46,3 @@ function CommonLayout() {
         </div>
     );
 }
-
-export default CommonLayout;
