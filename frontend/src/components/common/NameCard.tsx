@@ -2,15 +2,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Briefcase, Dot, Edit, MoreVertical, Phone } from "lucide-react";
 import profile from "@/assets/images/groups.svg";
 import { motion } from "framer-motion";
-// import { Badge } from "@/components/ui/badge";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import EditParticipantModal from "../coordinator/modal-edit-participant";
 import { useState } from "react";
+import { ModalEditParticipant } from "../coordinator/dashboard/users/ModalEditParticipant";
 
 // Interface for Props
 interface PropsType {
@@ -26,7 +25,7 @@ interface PropsType {
 }
 
 // Name card Component
-function NameCard({ data, showRole, isMoreOption }: PropsType) {
+export function NameCard({ data, showRole, isMoreOption }: PropsType) {
     // Edit modal state
     const [open, setOpen] = useState<boolean>(false);
 
@@ -53,9 +52,6 @@ function NameCard({ data, showRole, isMoreOption }: PropsType) {
                     <p className="text-base text-white font-semibold truncate">
                         {data.name || "Unknown"}
                     </p>
-                    {/* <Badge className="relative text-[11px] tracking-wider text-black font-normal bg-white hover:bg-white rounded-full overflow-hidden shadow">
-                        {data.role || "Paricipant"}
-                    </Badge> */}
                 </div>
                 <p className="text-xs text-white font-medium tracking-wide flex items-center w-full truncate h-6">
                     <span className="flex items-center gap-1">
@@ -100,9 +96,7 @@ function NameCard({ data, showRole, isMoreOption }: PropsType) {
             )}
 
             {/* Edit participant modal */}
-            <EditParticipantModal open={open} setOpen={setOpen} data={data} />
+            <ModalEditParticipant open={open} setOpen={setOpen} data={data} />
         </div>
     );
 }
-
-export default NameCard;

@@ -18,19 +18,20 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patchData } from "@/service/api-service";
-import API_END_POINTS from "@/constants/api-endpoints";
-import { useAuth } from "@/context/auth-context";
-import { useNotification } from "@/context/notification-context";
+import { patchData } from "@/service/apiService";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
+import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
     formSchemaParticipant,
     type FormTypeParticipant,
 } from "@/validations/update-participant";
-import ValidationError from "@/components/common/validation-error";
 import { useParams } from "react-router-dom";
-import { errorHandler } from "@/utils/error-handler";
+import { errorHandler } from "@/utils/errorHandler";
+import { ValidationError } from "@/components/common/ValidationError";
+
 // Interface for Props
 interface PropsType {
     open: boolean;
@@ -44,8 +45,8 @@ interface PropsType {
     };
 }
 
-// Edit participants Modal
-function EditParticipantModal({ open, setOpen, data }: PropsType) {
+// Edit participants modal
+export function ModalEditParticipant({ open, setOpen, data }: PropsType) {
     // Params
     const params = useParams();
     const phoneNumber = params.phoneNumber;
@@ -249,5 +250,3 @@ function EditParticipantModal({ open, setOpen, data }: PropsType) {
         </Dialog>
     );
 }
-
-export default EditParticipantModal;

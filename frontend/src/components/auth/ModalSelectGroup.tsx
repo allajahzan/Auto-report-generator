@@ -7,22 +7,22 @@ import {
 } from "@/components/ui/dialog";
 import { ChevronLeft, Home, Phone, UserRound, UsersRound } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
-import GroupList from "./groups-lists";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import profile from "@/assets/images/groups.svg";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useAuth } from "@/context/auth-context";
-import { useNotification } from "@/context/notification-context";
+import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
-import Loader from "@/components/common/loader";
-import NotFound from "@/components/common/not-found";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchData } from "@/service/api-service";
-import API_END_POINTS from "@/constants/api-endpoints";
-import ConfirmSelectModal from "./modal-confirm-select";
-import { errorHandler } from "@/utils/error-handler";
+import { fetchData } from "@/service/apiService";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
+import { errorHandler } from "@/utils/errorHandler";
+import { GroupList } from "./GroupList";
+import { ModalConfirmSelect } from "./ModalConfirmSelect";
+import { Loader } from "@/components/common/Loader";
+import { NotFound } from "@/components/common/NotFound";
 
 // Interface for group
 export interface IGroup {
@@ -48,7 +48,7 @@ interface PropsType {
 }
 
 // Select group modal Component
-function SelectGroupModal({ open, setOpen, groups }: PropsType) {
+export function ModalSelectGroup({ open, setOpen, groups }: PropsType) {
     // Group states
     const [selectedGroup, setSelectedGroup] = useState<IGroup | null>(null);
 
@@ -342,7 +342,7 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
                 )}
 
                 {/* Confirm modal */}
-                <ConfirmSelectModal
+                <ModalConfirmSelect
                     open={confirmOpen}
                     setOpen={setConfirmOpen}
                     selectedGroup={selectedGroup}
@@ -353,5 +353,3 @@ function SelectGroupModal({ open, setOpen, groups }: PropsType) {
         </Dialog>
     );
 }
-
-export default SelectGroupModal;

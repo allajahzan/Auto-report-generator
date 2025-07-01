@@ -1,6 +1,6 @@
-import API_END_POINTS from "@/constants/api-endpoints";
-import { useNotification } from "@/context/notification-context";
-import { fetchData } from "@/service/api-service";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
+import { useNotification } from "@/context/NotificationContext";
+import { fetchData } from "@/service/apiService";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Calendar,
@@ -14,18 +14,18 @@ import {
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/auth-context";
+import { useAuth } from "@/context/AuthContext";
 import robo from "@/assets/images/student.png";
-import Loader from "@/components/common/loader";
+import { Loader } from "@/components/common/Loader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Users from "./users";
-import Settings from "./settings";
-import EditBatchModal from "./modal-edit-batch";
-import { errorHandler } from "@/utils/error-handler";
-import Reports from "./reports";
+import { Users } from "./users/Users";
+import { Settings } from "./settings/Settings";
+import { Reports } from "./reports/Reports";
+import { ModalEditBatch } from "./ModalEditBatch";
+import { errorHandler } from "@/utils/errorHandler";
 
-// Dashboard coordinator
-function DashboardCoordinator() {
+// Dashboard
+export function Dashboard() {
     // Params
     const params = useParams();
     const phoneNumber = params.phoneNumber;
@@ -125,7 +125,7 @@ function DashboardCoordinator() {
                             </h1>
 
                             {/* Modal */}
-                            <EditBatchModal
+                            <ModalEditBatch
                                 children={
                                     <div className="self-start p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
                                         <Pencil className="w-4 h-4" />
@@ -200,5 +200,3 @@ function DashboardCoordinator() {
         </div>
     );
 }
-
-export default DashboardCoordinator;

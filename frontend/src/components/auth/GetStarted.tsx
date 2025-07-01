@@ -11,13 +11,13 @@ import {
     getQRcode,
     getStarted,
     socket,
-} from "@/socket/io";
-import SelectGroupModal, { type IGroup } from "./modal-select-group";
-import { useNotification } from "@/context/notification-context";
-import { useAuth } from "@/context/auth-context";
+} from "@/socket/notification.socket";
+import { useNotification } from "@/context/NotificationContext";
+import { useAuth } from "@/context/AuthContext";
+import { ModalSelectGroup, type IGroup } from "./ModalSelectGroup";
 
 // Get started Component
-function GetStarted() {
+export function GetStarted() {
     // Modal state
     const [open, setOpen] = useState<boolean>(false);
     const [groups, setGroups] = useState<IGroup[] | []>([]);
@@ -266,9 +266,7 @@ function GetStarted() {
             </div>
 
             {/* Select group modal */}
-            <SelectGroupModal open={open} setOpen={setOpen} groups={groups} />
+            <ModalSelectGroup open={open} setOpen={setOpen} groups={groups} />
         </div>
     );
 }
-
-export default GetStarted;

@@ -1,10 +1,10 @@
-import API_END_POINTS from "@/constants/api-endpoints";
-import { useAuth } from "@/context/auth-context";
-import { useNotification } from "@/context/notification-context";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
+import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
 import { cn } from "@/lib/utils";
-import { patchData } from "@/service/api-service";
-import type { IBatch } from "@/types/batch";
-import { errorHandler } from "@/utils/error-handler";
+import { patchData } from "@/service/apiService";
+import type { IBatch } from "@/types/IBatch";
+import { errorHandler } from "@/utils/errorHandler";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Save } from "lucide-react";
 import { useEffect } from "react";
@@ -16,7 +16,7 @@ interface PropsType {
 }
 
 // Save information
-export default function SaveInformation({ batch, reportInfo }: PropsType) {
+export function SaveInformation({ batch, reportInfo }: PropsType) {
     // Query client
     const queryClient = useQueryClient();
 

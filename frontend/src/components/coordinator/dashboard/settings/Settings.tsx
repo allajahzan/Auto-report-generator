@@ -1,24 +1,24 @@
-import type { IBatch } from "@/types/batch";
+import type { IBatch } from "@/types/IBatch";
 import { Activity, FileClock, LogOut, Settings2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patchData } from "@/service/api-service";
-import API_END_POINTS from "@/constants/api-endpoints";
+import { patchData } from "@/service/apiService";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
 import { useParams } from "react-router-dom";
-import { useAuth } from "@/context/auth-context";
-import { useNotification } from "@/context/notification-context";
-import { errorHandler } from "@/utils/error-handler";
-import ConfirmModal from "./modal-confirm-logout";
+import { useAuth } from "@/context/AuthContext";
+import { useNotification } from "@/context/NotificationContext";
+import { errorHandler } from "@/utils/errorHandler";
+import { ModalConfirmLogout } from "./ModalConfirmLogout";
 
 // Interface for props
 interface PropsType {
     data: IBatch;
 }
 
-// Settings Component
-function Settings({ data }: PropsType) {
+// Settings
+export function Settings({ data }: PropsType) {
     // Params
     const params = useParams();
     const phoneNumber = params.phoneNumber;
@@ -152,7 +152,7 @@ function Settings({ data }: PropsType) {
                             This will remove your WhatsApp account from Report Buddy.
                         </p>
                     </div>
-                    <ConfirmModal
+                    <ModalConfirmLogout
                         children={
                             <Button className="self-start sm:self-center border border-red-600 text-red-600 hover:bg-red-600/20 cursor-pointer">
                                 Logout
@@ -164,5 +164,3 @@ function Settings({ data }: PropsType) {
         </div>
     );
 }
-
-export default Settings;

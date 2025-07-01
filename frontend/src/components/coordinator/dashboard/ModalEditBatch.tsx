@@ -12,12 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Home, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { patchData } from "@/service/api-service";
-import API_END_POINTS from "@/constants/api-endpoints";
-import { useNotification } from "@/context/notification-context";
+import { patchData } from "@/service/apiService";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
+import { useNotification } from "@/context/NotificationContext";
 import { useParams } from "react-router-dom";
-import { useAuth } from "@/context/auth-context";
-import { errorHandler } from "@/utils/error-handler";
+import { useAuth } from "@/context/AuthContext";
+import { errorHandler } from "@/utils/errorHandler";
 
 // Interface for Props
 interface PropsType {
@@ -25,8 +25,8 @@ interface PropsType {
     batchName: string;
 }
 
-// Edit batch modal Component
-function EditBatchModal({ children, batchName }: PropsType) {
+// Edit batch modal
+export function ModalEditBatch({ children, batchName }: PropsType) {
     // Modal states
     const [open, setOpen] = useState<boolean>(false);
 
@@ -169,5 +169,3 @@ function EditBatchModal({ children, batchName }: PropsType) {
         </Dialog>
     );
 }
-
-export default EditBatchModal;

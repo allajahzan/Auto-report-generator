@@ -8,13 +8,13 @@ import {
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "@tanstack/react-query";
-import { postData } from "@/service/api-service";
-import API_END_POINTS from "@/constants/api-endpoints";
-import type { IGroup, IParticipant } from "./modal-select-group";
-import { useAuth } from "@/context/auth-context";
+import { postData } from "@/service/apiService";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
+import type { IGroup, IParticipant } from "./ModalSelectGroup";
+import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
-import { errorHandler } from "@/utils/error-handler";
-import { useNotification } from "@/context/notification-context";
+import { errorHandler } from "@/utils/errorHandler";
+import { useNotification } from "@/context/NotificationContext";
 
 // Interface for Props
 interface PropsType {
@@ -26,7 +26,7 @@ interface PropsType {
 }
 
 // Confirm select modal
-function ConfirmSelectModal({
+export function ModalConfirmSelect({
     open,
     setOpen,
     selectedGroup,
@@ -143,5 +143,3 @@ function ConfirmSelectModal({
         </Dialog>
     );
 }
-
-export default ConfirmSelectModal;

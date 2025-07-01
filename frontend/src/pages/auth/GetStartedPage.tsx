@@ -1,6 +1,6 @@
-import GetStarted from "@/components/auth/get-started";
+import { GetStarted } from "@/components/auth/GetStarted";
 
-// Login Page Component
+// Get started page
 function GetStartedPage() {
   return <GetStarted />;
 }
