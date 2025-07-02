@@ -315,7 +315,9 @@ export function ModalSelectGroup({ open, setOpen, groups }: PropsType) {
 
                                 {/* If no participants */}
                                 {participants?.length === 0 && (
-                                    <NotFound message="No participants found" />
+                                    <div className="h-full flex items-center justify-center">
+                                        <NotFound message="No participants found" />
+                                    </div>
                                 )}
                             </div>
                         </div>
