@@ -3,6 +3,7 @@ import { errorHandler } from "@codeflare/common";
 import router from "./routes";
 import cors from "cors";
 import { checkAuth } from "./middleware";
+import morgan from "morgan";
 
 // create app
 const app = express();
@@ -14,6 +15,7 @@ app.use(
     })
 );
 
+app.use(morgan("dev"));
 app.use(express.json());
 
 // routes

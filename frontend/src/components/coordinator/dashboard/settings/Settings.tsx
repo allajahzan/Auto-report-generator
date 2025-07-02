@@ -108,7 +108,7 @@ export function Settings({ data }: PropsType) {
                             Track WhatsApp Group
                         </h1>
                         <p className="font-medium text-xs text-muted-foreground">
-                            Track the selected WhatsApp group for audio task submissions.
+                            Track the selected WhatsApp Group for daily task submissions.
                         </p>
                     </div>
                     <Switch
@@ -126,10 +126,10 @@ export function Settings({ data }: PropsType) {
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
                         <h1 className="font-semibold text-sm text-white">
-                            Share Audio Task Reports
+                            Share daily task reports
                         </h1>
                         <p className="font-medium text-xs text-muted-foreground">
-                            Automatically share audio task reports in group at scheduled
+                            Automatically share daily task reports in group at scheduled
                             times.
                         </p>
                     </div>
@@ -147,7 +147,9 @@ export function Settings({ data }: PropsType) {
                         <LogOut className="w-5 h-5 rotate-180" />
                     </div>
                     <div className="flex-1 flex flex-col gap-1">
-                        <h1 className="font-semibold text-sm text-white">Logout</h1>
+                        <h1 className="font-semibold text-sm text-white">
+                            Logout from report buddy
+                        </h1>
                         <p className="font-medium text-xs text-muted-foreground w-full">
                             This will remove your WhatsApp account from Report Buddy.
                         </p>

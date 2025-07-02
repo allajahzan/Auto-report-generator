@@ -1,7 +1,9 @@
-import { BadRequestError } from "@codeflare/common";
+import { BadRequestError, ForbiddenError } from "@codeflare/common";
 import { IReportService } from "../interface";
 import { IReportRepository } from "../../repository/interface";
 import { IReportDto } from "../../dtos";
+import { getSocket } from "../../bot";
+import { sendTaskReport } from "../../utils/sendReport";
 
 // Implementation for Report Service
 export class ReportService implements IReportService {
@@ -66,7 +68,7 @@ export class ReportService implements IReportService {
             );
 
             if (!updatedReport)
-                throw new BadRequestError("Failed to update report information");
+                throw new BadRequestError("Failed to update task information");
         } catch (err: unknown) {
             throw err;
         }
@@ -75,21 +77,26 @@ export class ReportService implements IReportService {
     // Update report attendence
     async updateReportAttendence(
         batchId: string,
+        coordinatorId: string,
         data: Partial<IReportDto>
     ): Promise<void> {
         try {
+            const phoneNumber = coordinatorId;
+            const sock = getSocket(phoneNumber);
+            if (!sock) throw new ForbiddenError();
+
             // Current IST time
             const now = new Date();
             const istOffsetMs = 5.5 * 60 * 60 * 1000;
             const istNow = new Date(now.getTime() + istOffsetMs);
 
-            // Only allow update if time is after 22:05 (10:05 PM)
+            // Only allow update if time is after 22:00 (10:00 PM)
             const currentHours = istNow.getHours();
             const currentMinutes = istNow.getMinutes();
 
-            if (currentHours < 22 || (currentHours === 22 && currentMinutes < 5)) {
+            if (currentHours < 22 || (currentHours === 22 && currentMinutes < 0)) {
                 throw new BadRequestError(
-                    "Attendence can only be updated after 10:05 PM"
+                    "Attendence can only be updated after 10:00 PM"
                 );
             }
 
@@ -110,7 +117,10 @@ export class ReportService implements IReportService {
             );
 
             if (!updatedReport)
-                throw new BadRequestError("Failed to update report attendence");
+                throw new BadRequestError("Failed to update task attendence");
+
+            // Send task report in WhatsApp Group
+            sendTaskReport(phoneNumber, sock, false);
         } catch (err: unknown) {
             throw err;
         }

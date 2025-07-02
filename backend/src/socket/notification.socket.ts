@@ -1,10 +1,10 @@
-import { Socket } from "socket.io";
+import { Socket, Server } from "socket.io";
 import { startBaileysSocket } from "../bot";
 
 let activeUsers: Record<string, string> = {};
 
 // Notification socket
-export const notificationSocket = (socket: Socket) => {
+export const notificationSocket = (socket: Socket, io: Server) => {
     try {
         // Refresh socket
         socket.on("refresh-socket", (phoneNumber: string) => {
@@ -26,17 +26,15 @@ export const notificationSocket = (socket: Socket) => {
                         console.log(socketId, "socketId to emit QR code");
 
                         if (socketId) {
-                            socket.to(socketId).emit("get-qrcode", qr);
+                            io.to(socketId).emit("get-qrcode", qr);
                         }
                     },
                     async (status, message, groupId) => {
                         const socketId = activeUsers[phoneNumber];
                         console.log(socketId, "socketId to emit BOT status");
 
-                        console.log(message);
-
                         if (socketId) {
-                            socket.to(socketId).emit("bot-status", status, message, groupId);
+                            io.to(socketId).emit("bot-status", status, message, groupId);
                         }
                     }
                 );

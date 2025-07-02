@@ -18,7 +18,7 @@ export const connectSocketIO = (server: http.Server) => {
             console.log("Socket-io connected with id", socket.id);
 
             // Notification socket
-            notificationSocket(socket);
+            notificationSocket(socket, io);
         });
     } catch (err: any) {
         console.log(err.message, "my message");

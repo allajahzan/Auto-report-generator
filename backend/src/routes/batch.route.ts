@@ -27,6 +27,11 @@ router.get("/participant", async (req, res, next) => {
     batchController.getParticipants(req, res, next);
 });
 
+// Add participants
+router.post("/participant", checkBatch, async (req, res, next) => {
+    batchController.addParticipants(req, res, next);
+});
+
 // Update particiapants details
 router.patch("/participant", checkBatch, async (req, res, next) => {
     batchController.updateParicipants(req, res, next);

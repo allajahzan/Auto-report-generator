@@ -2,7 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import GetStartedPage from "@/pages/auth/GetStartedPage";
 import { CommonLayout } from "@/layout/CommonLayout";
 import { useAuth } from "@/context/AuthContext";
-import { DashbaordPage } from "@/pages/coordinator/DashboardPage";
+import { DashboardPage } from "@/pages/coordinator/DashboardPage";
+import { PageNotFound404 } from "@/pages/error/PageNotFound";
 
 // Coordinator route
 function CoordinatorRoute() {
@@ -23,11 +24,10 @@ function CoordinatorRoute() {
                     }
                 />
                 <Route
-                    path={`/:phoneNumber/:groupId`}
-                    element={
-                        connection ? <DashbaordPage /> : <Navigate to={"/"} />
-                    }
+                    path={"/:phoneNumber/:groupId"}
+                    element={connection ? <DashboardPage /> : <Navigate to="/" />}
                 />
+                <Route path="*" element={<PageNotFound404/>} />
             </Route>
         </Routes>
     );

@@ -1,8 +1,8 @@
-import { API_END_POINTS} from "@/constants/apiEndpoints";
+import { API_END_POINTS } from "@/constants/apiEndpoints";
 import { fetchData } from "@/service/apiService";
 import type { IBatch } from "@/types/IBatch";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Copy, FileText, ListTodo, ReceiptText, ScanEye } from "lucide-react";
+import { FileText, ListTodo, ReceiptText, ScanEye } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -58,9 +58,7 @@ export function Reports({ data: batch }: PropsType) {
 
     // Toggle student selection
     const toggleStudentSelection = (studentJson: string) => {
-        const student = JSON.parse(studentJson); // convert to object
-
-        console.log(student);
+        const student = JSON.parse(studentJson); 
 
         setSelectedStudents((prev) => {
             const isAlreadySelected = prev.some((s) => s.id === student.id);
@@ -73,59 +71,6 @@ export function Reports({ data: batch }: PropsType) {
                 return [...prev, student];
             }
         });
-    };
-
-    // Handle copy
-    const handleCopy = () => {
-        const submitted = batch.participants
-            .filter(
-                (p) =>
-                    p.role === "Student" && selectedStudents.some((s) => s.id === p.id)
-            )
-            .map((p) => `${p.name}: ✅`)
-            .join("\n");
-
-        const notSubmitted = batch.participants
-            .filter(
-                (p) =>
-                    p.role === "Student" && !selectedStudents.some((s) => s.id === p.id)
-            )
-            .map((p) => `${p.name}: ❌`)
-            .join("\n");
-
-        const text = `
-            ${data?.taskType
-                ? `${data.taskType} task report`
-                : "Daily task report"
-            }
-            🎓BATCH: ${batch.batchName}
-            📅Date: ${data?.date
-                ? new Date(data.date).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                })
-                : new Date().toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                })
-            }
-            👨‍🏫Trainer: ${trainer}
-            🎤Coordinator: ${coordinator}
-            📝Topic: ${data?.taskTopic || "Not mentioned"}
-
-            Submitted:-
-            ${submitted}
-
-            Not submitted:-
-            ${notSubmitted}
-    `.trim();
-
-        navigator.clipboard
-            .writeText(text)
-            .then(() => notify("Task report copied to clipboard ✅"))
-            .catch(() => notify("Task report failed to copy ❌"));
     };
 
     // useQuery for fetching reports
@@ -141,8 +86,6 @@ export function Reports({ data: batch }: PropsType) {
                 return resp.data?.data || "";
             }
         },
-        staleTime: 0,
-        refetchOnMount: true,
         retry: false,
     });
 
@@ -171,6 +114,10 @@ export function Reports({ data: batch }: PropsType) {
 
             setTask(data?.taskType || "");
             setTopic(data?.taskTopic || "");
+        } else {
+            setSelectedStudents([]);
+            setTask("");
+            setTopic("");
         }
     }, [data, batch]);
 
@@ -187,7 +134,7 @@ export function Reports({ data: batch }: PropsType) {
     return (
         <>
             {isLoading && (
-                <div className="h-[260px] w-full flex items-center justify-center">
+                <div className="h-[265px] w-full flex items-center justify-center">
                     <Loader />
                 </div>
             )}
@@ -302,7 +249,7 @@ export function Reports({ data: batch }: PropsType) {
                                         htmlFor="students"
                                         className="text-xs text-white font-medium"
                                     >
-                                        Students
+                                        Select students who completed the task
                                     </Label>
 
                                     {/* Hidden input */}
@@ -334,7 +281,9 @@ export function Reports({ data: batch }: PropsType) {
                                                         }
                                                         className={cn(
                                                             "flex flex-col gap-5 p-3 border border-transparent rounded-lg shadow bg-my-bg-dark cursor-pointer",
-                                                            isSelected ? "border border-white" : ""
+                                                            isSelected
+                                                                ? "border-2 border-green-800 bg-green-900/20"
+                                                                : "border-2 border-transparent"
                                                         )}
                                                     >
                                                         <NameCard
@@ -373,12 +322,12 @@ export function Reports({ data: batch }: PropsType) {
                                     </h1>
                                 </div>
 
-                                <div
+                                {/* <div
                                     onClick={handleCopy}
                                     className="p-2 text-white cursor-pointer"
                                 >
                                     <Copy className="w-4 h-4" />
-                                </div>
+                                </div> */}
                             </div>
 
                             {/*  */}
@@ -390,7 +339,7 @@ export function Reports({ data: batch }: PropsType) {
                                 </p>
                                 <p>🎓BATCH: {batch.batchName}</p>
                                 <p>
-                                    📅Date:
+                                    📅Date:{" "}
                                     {data?.date
                                         ? new Date(data.date).toLocaleDateString("en-GB", {
                                             day: "2-digit",
@@ -412,7 +361,7 @@ export function Reports({ data: batch }: PropsType) {
                                     .filter((p) => p.role === "Student")
                                     .map((p) => {
                                         if (selectedStudents.some((s) => s.id === p.id)) {
-                                            return <p key={p.id}>{p.name}: ✅</p>;
+                                            return <p key={p.id}>{p.name}:✅</p>;
                                         }
                                     })}
                                 <br />
@@ -421,7 +370,7 @@ export function Reports({ data: batch }: PropsType) {
                                     .filter((p) => p.role === "Student")
                                     .map((p) => {
                                         if (!selectedStudents.some((s) => s.id === p.id)) {
-                                            return <p key={p.id}>{p.name}: ❌</p>;
+                                            return <p key={p.id}>{p.name}:❌</p>;
                                         }
                                     })}
                             </div>

@@ -17,7 +17,7 @@ export const checkAuth = async (
         const phoneNumber = coordinatorId as string;
 
         // Check if auth_info directory exists or empty
-        const auth_info_dir = `src/auth_info/${phoneNumber}`;
+        const auth_info_dir = `src/auth/${phoneNumber}`;
 
         if (
             !fs.existsSync(auth_info_dir) ||
@@ -27,9 +27,7 @@ export const checkAuth = async (
         }
 
         const sock = getSocket(phoneNumber);
-        if (!sock) {
-            throw new ForbiddenError();
-        }
+        if (!sock) throw new ForbiddenError();
 
         next();
     } catch (err: unknown) {

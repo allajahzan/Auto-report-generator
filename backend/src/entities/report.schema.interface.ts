@@ -9,6 +9,7 @@ export interface IReportSchema extends Document {
         name: string;
         phoneNumber: string;
         isCompleted: boolean;
+        messageID: string;
         timestamp: Date;
     }[];
     taskType: string;

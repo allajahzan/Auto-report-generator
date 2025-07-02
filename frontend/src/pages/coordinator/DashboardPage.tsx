@@ -1,6 +1,6 @@
 import { Dashboard } from "@/components/coordinator/dashboard/Dashboard";
 
 // Dashboard page
-export function DashbaordPage() {
+export function DashboardPage() {
     return <Dashboard />;
 }

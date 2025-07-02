@@ -1,10 +1,5 @@
 import "./App.css";
-import {
-    BrowserRouter as Router,
-    Routes,
-    Route,
-    Navigate,
-} from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import UserRoute from "./routes/coordinatorRoute";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
@@ -18,7 +13,6 @@ function App() {
 
             <Router>
                 <Routes>
-                    <Route path="*" element={<Navigate to="/" />} />
                     <Route path="/*" element={<UserRoute />} />
                 </Routes>
             </Router>

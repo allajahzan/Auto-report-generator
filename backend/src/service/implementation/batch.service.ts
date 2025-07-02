@@ -9,6 +9,7 @@ import { IBatchRepository } from "../../repository/interface";
 import { IBatchDto, IParticipantDto } from "../../dtos";
 import { getSocket, removeSocket } from "../../bot";
 import { IBatchSchema } from "../../entities";
+import { withTimeout } from "../../utils/timeout";
 
 // Implementation for Batch Service
 export class BatchService implements IBatchService {
@@ -26,14 +27,10 @@ export class BatchService implements IBatchService {
                 coordinatorId,
             });
 
-            if (!batch) throw new NotFoundError("Batch not found");
+            if (!batch) throw new NotFoundError("This batch not found");
 
-            const phoneNumber = coordinatorId;
-            const sock = getSocket(phoneNumber);
-
-            if (!sock) {
-                throw new ForbiddenError();
-            }
+            const sock = getSocket(coordinatorId);
+            if (!sock) throw new ForbiddenError();
 
             // Map data to return type
             const batchDto: IBatchDto = {
@@ -45,10 +42,17 @@ export class BatchService implements IBatchService {
                     batch.participants.map(async (p) => {
                         let profilePic = "";
                         try {
-                            profilePic = (await sock.profilePictureUrl(p.id, "image")) || "";
+                            profilePic = await withTimeout(
+                                sock.profilePictureUrl(p.id, "image"),
+                                500,
+                                ""
+                            );
                         } catch (err) {
                             profilePic = "";
                         }
+
+                        // Delay
+                        await new Promise((res) => setTimeout(res, 100));
 
                         return {
                             id: p.id,
@@ -95,7 +99,8 @@ export class BatchService implements IBatchService {
         coordinatorId: string
     ): Promise<IParticipantDto[]> {
         try {
-            const sock = getSocket(coordinatorId);
+            const phoneNumber = coordinatorId;
+            const sock = getSocket(phoneNumber);
             if (!sock) throw new ForbiddenError();
 
             const batch = await this.batchRepository.findOne({ groupId });
@@ -108,9 +113,11 @@ export class BatchService implements IBatchService {
                         id: p.id,
                         name: p.name || "",
                         phoneNumber: p.id.split("@")[0].slice(2),
-                        profilePic:
-                            (await sock.profilePictureUrl(p.id, "image").catch(() => "")) ||
-                            "",
+                        profilePic: await withTimeout(
+                            sock.profilePictureUrl(p.id, "image"),
+                            500,
+                            ""
+                        ),
                         role: "",
                     }))
                 );
@@ -123,9 +130,11 @@ export class BatchService implements IBatchService {
                         id: p.id,
                         name: p.name || "",
                         phoneNumber: p.phoneNumber,
-                        profilePic:
-                            (await sock.profilePictureUrl(p.id, "image").catch(() => "")) ||
-                            "",
+                        profilePic: await withTimeout(
+                            sock.profilePictureUrl(p.id, "image"),
+                            500,
+                            ""
+                        ),
                         role: p.role || "",
                     }))
                 );
@@ -135,6 +144,58 @@ export class BatchService implements IBatchService {
             throw new ConflictError(
                 "This group is already managed by another coordinator"
             );
+        } catch (err: unknown) {
+            throw err;
+        }
+    }
+
+    // Add participants
+    async addParticipants(
+        groupId: string,
+        coordinatorId: string,
+        participant: { id: string; name: string; phoneNumber: string; role: string }
+    ): Promise<void> {
+        try {
+            const batch = await this.batchRepository.findOne({
+                groupId,
+                coordinatorId,
+            });
+
+            if (!batch) throw new BadRequestError("This batch not found");
+
+            // Existing participants
+            const existingParticipants = new Set(
+                batch.participants.map((p) => p.phoneNumber)
+            );
+
+            // Check weather participant exists or not
+            if (existingParticipants.has(participant.phoneNumber)) {
+                throw new BadRequestError("This participant already exists");
+            } else {
+                const phoneNumber = coordinatorId;
+                const sock = getSocket(phoneNumber);
+                if (!sock) throw new ForbiddenError();
+
+                // Group metadata
+                const metadata = await sock.groupMetadata(groupId);
+                const newParticipant = metadata.participants.find(
+                    (p) => p.id.split("@")[0].slice(2) === participant.phoneNumber
+                );
+
+                if (!newParticipant)
+                    throw new BadRequestError("Participant not found in WhatsApp group");
+
+                participant.id = newParticipant.id || "";
+            }
+
+            const updatedBatch = await this.batchRepository.update(
+                { coordinatorId, groupId },
+                { $addToSet: { participants: participant } },
+                { new: true }
+            );
+
+            if (!updatedBatch)
+                throw new BadRequestError("Failed to add new participant");
         } catch (err: unknown) {
             throw err;
         }

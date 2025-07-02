@@ -26,6 +26,9 @@ const reportSchema = new Schema<IReportSchema>({
                 isCompleted: {
                     type: Boolean,
                 },
+                messageID:{
+                    type: String
+                },
                 timestamp: {
                     type: Date
                 }

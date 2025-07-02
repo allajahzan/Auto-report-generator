@@ -20,7 +20,7 @@ export const checkBatch = async (
             coordinatorId,
         });
 
-        if (!batch) throw new NotFoundError("Batch not found");
+        if (!batch) throw new NotFoundError("This batch not found");
 
         next();
     } catch (err: unknown) {

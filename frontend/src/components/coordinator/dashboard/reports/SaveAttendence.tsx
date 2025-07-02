@@ -29,6 +29,8 @@ export function SaveAttendence({ batch, selectedStudents }: PropsType) {
 
     // Handle save
     const handleSave = () => {
+        console.log("sd");
+        
         let students = batch.participants.filter((p) => p.role === "Student");
         let taskReport: IAttendence[] = [];
 
@@ -50,7 +52,6 @@ export function SaveAttendence({ batch, selectedStudents }: PropsType) {
             }
         }
 
-        if (taskReport.length === 0) return;
         mutate(taskReport);
     };
 
@@ -89,7 +90,7 @@ export function SaveAttendence({ batch, selectedStudents }: PropsType) {
 
     return (
         <div
-            onClick={selectedStudents.length === 0 ? undefined : handleSave}
+            onClick={handleSave}
             className="p-2  cursor-pointer"
         >
             {isPending ? (
@@ -97,8 +98,7 @@ export function SaveAttendence({ batch, selectedStudents }: PropsType) {
             ) : (
                 <Save
                     className={cn(
-                        "w-4 h-4 text-white",
-                        selectedStudents.length === 0 && "opacity-50 cursor-not-allowed"
+                        "w-4 h-4 text-white"
                     )}
                 />
             )}

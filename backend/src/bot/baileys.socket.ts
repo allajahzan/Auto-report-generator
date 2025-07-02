@@ -15,6 +15,7 @@ import { getActiveUsers, getIO } from "../socket";
 import { detectIsTopic, detectTaskType } from "../utils";
 import { scheduleTaskReport } from "../job";
 import { removeSocket, setSocket } from ".";
+import { withTimeout } from "../utils/timeout";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);
@@ -74,6 +75,7 @@ export const startBaileysSocket = async (
                 if (qr) {
                     if (currentQR && currentQR !== qr) {
                         console.log("⏰ Previous QR expired:", phoneNumber);
+
                         emitStatus(
                             "expired",
                             "QR code is expired, now get started again 🚀"
@@ -156,8 +158,11 @@ export const startBaileysSocket = async (
                                 .map(async (group) => {
                                     let profilePic = "";
                                     try {
-                                        profilePic =
-                                            (await sock.profilePictureUrl(group.id, "image")) || "";
+                                        profilePic = await withTimeout(
+                                            sock.profilePictureUrl(group.id, "image"),
+                                            500,
+                                            ""
+                                        );
                                     } catch (err) {
                                         profilePic = "";
                                     }
@@ -266,11 +271,13 @@ export const startBaileysSocket = async (
                     coordinatorId: phoneNumber,
                 });
 
-                if (!batch || !batch.isTrackingEnabled || !messages || !messages.length)
-                    return;
+                if (!batch || !messages || !messages.length) return;
 
                 // Group ID of batch
                 const groupIdFromDB = batch.groupId;
+                const coordinator = batch.participants.find(
+                    (p) => p.phoneNumber === phoneNumber
+                );
 
                 for (const msg of messages) {
                     try {
@@ -297,13 +304,13 @@ export const startBaileysSocket = async (
 
                             if (taskType || taskTopic) {
                                 console.log("Task Type:", taskType);
-                                console.log("TaskTopic:", taskTopic);
+                                console.log("Task Topic:", taskTopic);
 
                                 const updatedReport = await reportRepository.findOneAndUpdate(
                                     { batchId: batch._id as unknown as string, date: dateStr },
                                     {
                                         $set: taskTopic
-                                            ? { taskTopic: textMessage.split(":")[1].trim() }
+                                            ? { taskTopic: textMessage.split(/topic:/i)[1].trim() }
                                             : { taskType },
                                     },
                                     { upsert: true, new: true }
@@ -317,13 +324,13 @@ export const startBaileysSocket = async (
                                                 text: `Sorry, we couldn’t update the ${taskTopic ? "topic" : "task"
                                                     } for the day ${new Date(
                                                         dateStr
-                                                    ).toLocaleDateString()} ❌.\n\nPlease try again in a few moments or update it directly through the Report Buddy web app.\n\n– Report Buddy`,
+                                                    ).toLocaleDateString()} ❌.\n\nPlease try again in a few moments or update it directly through the Report Buddy web app.\n\n-Report Buddy`,
                                             },
 
                                             { quoted: msg }
                                         );
                                     } catch (err) {
-                                        console.log(
+                                        console.error(
                                             "Error notifying the coordinator:",
                                             phoneNumber
                                         );
@@ -334,25 +341,27 @@ export const startBaileysSocket = async (
                                             msg.key.remoteJid as string,
                                             {
                                                 text: `${taskTopic ? "Topic" : "Task"
-                                                    } updated for the day ${new Date(
+                                                    } has been successfully updated for ${new Date(
                                                         dateStr
-                                                    ).toLocaleDateString()} successfully ✅.\n\n-Report Buddy`,
+                                                    ).toLocaleDateString("en-GB")} ✅.\n\n-Report Buddy`,
                                             },
                                             { quoted: msg }
                                         );
                                     } catch (err) {
-                                        console.log(
+                                        console.error(
                                             "Error notifying the coordinator:",
                                             phoneNumber
                                         );
                                     }
                                 }
                             }
+
+                            continue;
                         }
 
                         // Between 15-22PM (3-10PM)
-                        const time = new Date().getHours();
-                        if (time < 15 || time > 22) return;
+                        const hour = new Date().getHours();
+                        if (hour < 15 || hour > 21) return;
 
                         // Check weather message is from that perticular group or not
                         const isMessageFromGroup =
@@ -371,31 +380,64 @@ export const startBaileysSocket = async (
                         const sender = batch.participants.find((p) => p.id === msgSenderId);
                         if (!sender) continue;
 
-                        console.log(
-                            "sender name:",
-                            sender.name,
-                            ",",
-                            "sender role:",
-                            sender.role
-                        );
+                        console.log("sender:", { name: sender.name, role: sender.role });
                         console.log("message:", textMessage ? textMessage : undefined);
 
                         // Check weather message is text and also it is "Start"
                         const isTaskStarted = /\bstart\b/i.test(textMessage.trim());
                         console.log("Task Started:", isTaskStarted);
 
+                        // Check weather tracking is enabled or not -
+                        // - When task is started
+                        if (isTaskStarted && !batch.isTrackingEnabled) {
+                            try {
+                                await sock.sendMessage(
+                                    coordinator?.id as string,
+                                    {
+                                        text: "Dear coordinator, Tracking is not enabled for this WhatsApp Group. Please enable it in settings.\n\n-Report Buddy",
+                                    },
+                                    { quoted: msg }
+                                );
+                            } catch (err) {
+                                console.log("Error in notifying coordinator: ", phoneNumber);
+                            }
+
+                            continue;
+                        }
+
+                        // Existing report
                         let isReportExist = await reportRepository.findOne({
                             batchId: batch._id as unknown as string,
                             date: dateStr,
                         });
 
                         if (!isReportExist) {
+                            if (!isTaskStarted) continue;
+
                             try {
-                                await sock.sendMessage(sender.id, {
-                                    text: "Sorry, we couldn't initialize your task 👎.",
+                                // Reaction to sender
+                                await sock.sendMessage(groupId as string, {
+                                    react: {
+                                        key: msg.key,
+                                        text: "❌",
+                                    },
                                 });
+
+                                // Notify coordinator
+                                await sock.sendMessage(
+                                    coordinator?.id as string,
+                                    {
+                                        text: `Dear coordinator, you haven't added today's task or topic yet 👊\n\n-Report Buddy`,
+                                    },
+                                    { quoted: msg }
+                                );
+
+                                console.log(
+                                    "Failed to initialize attendence for sender:",
+                                    phoneNumber
+                                );
                             } catch (err) {
-                                console.log("Error notifying the sender:", phoneNumber);
+                                console.error("Error reacting to sender:", phoneNumber);
                             }
 
                             continue;
@@ -411,8 +453,9 @@ export const startBaileysSocket = async (
                                     );
 
                                 // Not exist, then add new report for sender
+                                let updatedReport;
                                 if (existingReportOfSenderIndex === -1) {
-                                    await reportRepository.findOneAndUpdate(
+                                    updatedReport = await reportRepository.findOneAndUpdate(
                                         { batchId: batch._id as unknown as string, date: dateStr },
                                         {
                                             $push: {
@@ -421,18 +464,56 @@ export const startBaileysSocket = async (
                                                     name: sender.name || sender.phoneNumber,
                                                     phoneNumber: sender.phoneNumber,
                                                     isCompleted: false,
-                                                    timestamp: new Date(),
+                                                    timestamp: now,
                                                 },
                                             },
-                                        }
+                                        },
+                                        { new: true }
                                     );
 
-                                    console.log("Created attendence for sender:", phoneNumber);
-                                } else {
                                     console.log(
-                                        "Already initialized attendence for sender:",
+                                        "Initialized attendence for sender:",
                                         phoneNumber
                                     );
+                                } else {
+                                    if (
+                                        isReportExist.taskReport[existingReportOfSenderIndex]
+                                            .isCompleted
+                                    ) {
+                                        console.log(
+                                            "Attendence already marked for sender:",
+                                            phoneNumber
+                                        );
+                                        continue;
+                                    } else {
+                                        console.log(
+                                            "Already initialized attendence for sender:",
+                                            phoneNumber
+                                        );
+                                    }
+                                }
+
+                                // Reaction to sender
+                                const reaction =
+                                    isReportExist.taskType === "Audio"
+                                        ? "🎙️"
+                                        : isReportExist.taskType === "Writing"
+                                            ? "✍️"
+                                            : isReportExist.taskType === "Writing"
+                                                ? "👂"
+                                                : "";
+                                try {
+                                    await sock.sendMessage(groupId, {
+                                        react: {
+                                            key: msg.key,
+                                            text:
+                                                existingReportOfSenderIndex === -1 && !updatedReport
+                                                    ? "❌"
+                                                    : reaction,
+                                        },
+                                    });
+                                } catch (err) {
+                                    console.error("Error reacting to sender:", phoneNumber);
                                 }
                             } catch (err) {
                                 console.error(
@@ -440,10 +521,12 @@ export const startBaileysSocket = async (
                                     phoneNumber
                                 );
                             }
+
+                            continue;
                         }
 
                         // If task is audio, check message is audio
-                        // If task is grammer or Writing check message is image
+                        // If task is Writing or listening, check message is image
                         if (
                             (msg.message?.audioMessage &&
                                 isReportExist.taskType === "Audio") ||
@@ -466,45 +549,70 @@ export const startBaileysSocket = async (
                                         new Date().getTime() -
                                         new Date(existingReportOfSender.timestamp).getTime();
 
-                                    // Within 2 minutes
-                                    if (timeDiff <= 2 * 60 * 1000) {
-                                        await reportRepository.findOneAndUpdate(
-                                            {
-                                                batchId: batch._id,
-                                                date: dateStr,
-                                                "taskReport.phoneNumber": sender.phoneNumber,
-                                            },
-                                            { $set: { "taskReport.$.isCompleted": true } }
-                                        );
-
-                                        console.log(
-                                            "Completed attendence for sender:",
-                                            phoneNumber
-                                        );
-                                    } else {
-                                        // Delete the attendence of sender if time is over
-                                        console.log("Time is over for :", sender.phoneNumber);
-
-                                        await reportRepository.findOneAndUpdate(
+                                    // Within 10 minutes
+                                    if (timeDiff <= 10 * 60 * 1000) {
+                                        let updatedReport = await reportRepository.findOneAndUpdate(
                                             {
                                                 batchId: batch._id,
                                                 date: dateStr,
                                                 "taskReport.phoneNumber": sender.phoneNumber,
                                             },
                                             {
-                                                $pull: {
-                                                    taskReport: {
-                                                        phoneNumber: sender.phoneNumber,
-                                                    },
+                                                $set: {
+                                                    "taskReport.$.isCompleted": true,
+                                                    "taskReport.$.messageID": msg.key.id,
                                                 },
-                                            }
+                                            },
+                                            { new: true }
                                         );
+
+                                        // Reaction to sender
+                                        try {
+                                            await sock.sendMessage(groupId, {
+                                                react: {
+                                                    key: msg.key,
+                                                    text: updatedReport ? "✅" : "❌",
+                                                },
+                                            });
+                                        } catch (err) {
+                                            console.error("Error reacting to sender:", phoneNumber);
+                                        }
+
+                                        console.log("Marked attendence for sender:", phoneNumber);
+                                    } else {
+                                        console.log("Time is over:", phoneNumber);
+
+                                        // Reset timestamp of the initialized attendence of sender
+                                        const updatedReport =
+                                            await reportRepository.findOneAndUpdate(
+                                                {
+                                                    batchId: batch._id,
+                                                    date: dateStr,
+                                                    "taskReport.phoneNumber": sender.phoneNumber,
+                                                },
+                                                {
+                                                    $set: { "taskReport.$.timestamp": now },
+                                                },
+                                                { new: true }
+                                            );
+
+                                        // React to sender
+                                        try {
+                                            await sock.sendMessage(groupId, {
+                                                react: {
+                                                    key: msg.key,
+                                                    text: updatedReport ? "🚫" : "❌",
+                                                },
+                                            });
+                                        } catch (err) {
+                                            console.error("Error reacting to sender", phoneNumber);
+                                        }
 
                                         // Notify the sender
                                         try {
                                             await sock.sendMessage(sender.id, {
-                                                text: `Dear ${sender.name || "Participant"
-                                                    },\nYour ${isReportExist.taskType.toLowerCase()} task attendance has been removed as it wasn't submitted within 2 minutes of initiation. Please try again within the time limit to avoid being marked absent.\n\n– Report Buddy`,
+                                                text: `Dear ${sender.name || "student"
+                                                    },\nYour ${isReportExist.taskType.toLowerCase()} submission was removed as it wasn't sent within the time limit. Please resend it within the next 10 minutes to avoid being marked absent ⏱️.\n\n-Report Buddy`,
                                             });
                                         } catch (err) {
                                             console.error(
@@ -527,6 +635,99 @@ export const startBaileysSocket = async (
                 }
             } catch (err) {
                 console.error("Error in messages.upsert handler:", phoneNumber);
+            }
+        });
+
+        // Updates in messages
+        sock.ev.on("messages.update", async (updates) => {
+            try {
+                // Batch
+                const batch = await batchRepository.findOne({
+                    coordinatorId: phoneNumber,
+                });
+
+                if (!batch) return;
+
+                // Group ID
+                const groupIdFromDB = batch.groupId;
+
+                for (const update of updates) {
+                    try {
+                        // Message deleted
+                        if (update.update.messageStubType === 1) {
+                            console.log("Message deleted");
+
+                            const messageId = update.key.id;
+
+                            const isMessageFromGroup =
+                                update.key.remoteJid?.endsWith("@g.us");
+                            const groupId = update.key.remoteJid;
+                            const msgSenderId = update.key.participant;
+
+                            if (
+                                !isMessageFromGroup ||
+                                groupIdFromDB !== groupId ||
+                                !msgSenderId
+                            )
+                                continue;
+
+                            console.log("From our group");
+
+                            // Correct date with proper timezone
+                            const now = new Date();
+                            const istDate = new Date(now.getTime() + 5.5 * 60 * 60 * 1000);
+                            const dateStr = istDate.toISOString().split("T")[0]; // "2025-06-28"
+
+                            const isReportExist = await reportRepository.findOneAndUpdate(
+                                {
+                                    batchId: batch._id as unknown as string,
+                                    date: dateStr,
+                                    "taskReport.messageID": messageId,
+                                },
+                                {
+                                    $set: {
+                                        "taskReport.$.isCompleted": false,
+                                        "taskReport.$.timestamp": now,
+                                    },
+                                },
+                                { new: true }
+                            );
+
+                            if (!isReportExist) continue;
+
+                            // Sender, who deleted the message
+                            const sender = batch.participants.find(
+                                (p) => p.id === msgSenderId
+                            );
+
+                            if (!sender) continue;
+
+                            try {
+                                await sock.sendMessage(msgSenderId as string, {
+                                    text: `Dear ${sender?.name || "student"
+                                        },\n\nWe noticed that you deleted your submitted task in the group. As a result, your attendance for this task has been marked as absent. So please resend the task within the next 10 minutes ⏱️.\n\n-Report Buddy`,
+                                });
+                            } catch (err) {
+                                console.error(
+                                    "Error notifying sender for deleting task:",
+                                    phoneNumber
+                                );
+                            }
+
+                            console.log(
+                                "Reset attendence of sender after deleting task:",
+                                phoneNumber
+                            );
+                        }
+                    } catch (err) {
+                        console.error(
+                            "Error processing individual message updates:",
+                            phoneNumber
+                        );
+                    }
+                }
+            } catch (err) {
+                console.error("Error in messages.update handler:", phoneNumber);
             }
         });
 
