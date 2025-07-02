@@ -2,6 +2,7 @@ import type { IBatch } from "@/types/IBatch";
 import { NameCard } from "@/components/common/NameCard";
 import { Plus, UserRound } from "lucide-react";
 import { ModalAddParticipant } from "./ModalAddParticipant";
+import { ToolTip } from "@/components/common/ToolTip";
 
 // Interface for Props
 interface PropsType {
@@ -55,9 +56,14 @@ export function Users({ data }: PropsType) {
                     {/* Add modal */}
                     <ModalAddParticipant
                         children={
-                            <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                <Plus className="w-4 h-4" />
-                            </div>
+                            <ToolTip
+                                children={
+                                    <div className="p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
+                                        <Plus className="w-4 h-4" />
+                                    </div>
+                                }
+                                text="Add participant"
+                            />
                         }
                     />
                 </div>

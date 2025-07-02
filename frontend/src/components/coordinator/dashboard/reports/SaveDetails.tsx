@@ -1,3 +1,4 @@
+import { ToolTip } from "@/components/common/ToolTip";
 import { API_END_POINTS } from "@/constants/apiEndpoints";
 import { useAuth } from "@/context/AuthContext";
 import { useNotification } from "@/context/NotificationContext";
@@ -16,7 +17,7 @@ interface PropsType {
 }
 
 // Save information
-export function SaveInformation({ batch, reportInfo }: PropsType) {
+export function SaveDetails({ batch, reportInfo }: PropsType) {
     // Query client
     const queryClient = useQueryClient();
 
@@ -70,23 +71,28 @@ export function SaveInformation({ batch, reportInfo }: PropsType) {
     }, [error]);
 
     return (
-        <div
-            onClick={
-                reportInfo.taskTopic && reportInfo.taskType ? handleSave : undefined
-            }
-            className="p-2  cursor-pointer"
-        >
-            {isPending ? (
-                <Loader2 className="w-4 h-4 text-white animate-spin" />
-            ) : (
-                <Save
-                    className={cn(
-                        "w-4 h-4 text-white",
-                        !(reportInfo.taskType && reportInfo.taskTopic) &&
-                        "opacity-50 cursor-not-allowed"
+        <ToolTip
+            children={
+                <div
+                    onClick={
+                        reportInfo.taskTopic && reportInfo.taskType ? handleSave : undefined
+                    }
+                    className="p-2  cursor-pointer"
+                >
+                    {isPending ? (
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    ) : (
+                        <Save
+                            className={cn(
+                                "w-4 h-4 text-white",
+                                !(reportInfo.taskType && reportInfo.taskTopic) &&
+                                "opacity-50 cursor-not-allowed"
+                            )}
+                        />
                     )}
-                />
-            )}
-        </div>
+                </div>
+            }
+            text="Save task details"
+        />
     );
 }

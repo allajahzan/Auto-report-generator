@@ -9,6 +9,7 @@ import { Loader2, Save } from "lucide-react";
 import { useEffect } from "react";
 import { cn } from "@/lib/utils";
 import type { IAttendence } from "@/types/IAttendence";
+import { ToolTip } from "@/components/common/ToolTip";
 
 // Interface for Props
 interface PropsType {
@@ -30,7 +31,7 @@ export function SaveAttendence({ batch, selectedStudents }: PropsType) {
     // Handle save
     const handleSave = () => {
         console.log("sd");
-        
+
         let students = batch.participants.filter((p) => p.role === "Student");
         let taskReport: IAttendence[] = [];
 
@@ -89,19 +90,17 @@ export function SaveAttendence({ batch, selectedStudents }: PropsType) {
     }, [error]);
 
     return (
-        <div
-            onClick={handleSave}
-            className="p-2  cursor-pointer"
-        >
-            {isPending ? (
-                <Loader2 className="w-4 h-4 text-white animate-spin" />
-            ) : (
-                <Save
-                    className={cn(
-                        "w-4 h-4 text-white"
+        <ToolTip
+            children={
+                <div onClick={handleSave} className="p-2  cursor-pointer">
+                    {isPending ? (
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    ) : (
+                        <Save className={cn("w-4 h-4 text-white")} />
                     )}
-                />
-            )}
-        </div>
+                </div>
+            }
+            text="Save task attendence"
+        />
     );
 }

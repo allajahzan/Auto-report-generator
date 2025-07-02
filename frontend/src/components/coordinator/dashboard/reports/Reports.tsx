@@ -19,7 +19,7 @@ import { errorHandler } from "@/utils/errorHandler";
 import { useNotification } from "@/context/NotificationContext";
 import { useAuth } from "@/context/AuthContext";
 import { Loader } from "@/components/common/Loader";
-import { SaveInformation } from "./SaveInformation";
+import { SaveDetails } from "./SaveDetails";
 import { SaveAttendence } from "./SaveAttendence";
 import { NotFound } from "@/components/common/NotFound";
 import type { IAttendence } from "@/types/IAttendence";
@@ -153,7 +153,7 @@ export function Reports({ data: batch }: PropsType) {
                             </div>
 
                             {/* Save */}
-                            <SaveInformation
+                            <SaveDetails
                                 batch={batch}
                                 reportInfo={{
                                     taskType: task,

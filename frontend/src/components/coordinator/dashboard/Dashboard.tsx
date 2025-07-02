@@ -23,6 +23,7 @@ import { Settings } from "./settings/Settings";
 import { Reports } from "./reports/Reports";
 import { ModalEditBatch } from "./ModalEditBatch";
 import { errorHandler } from "@/utils/errorHandler";
+import { ToolTip } from "@/components/common/ToolTip";
 
 // Dashboard
 export function Dashboard() {
@@ -127,9 +128,14 @@ export function Dashboard() {
                             {/* Modal */}
                             <ModalEditBatch
                                 children={
-                                    <div className="self-start p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
-                                        <Pencil className="w-4 h-4" />
-                                    </div>
+                                    <ToolTip
+                                        children={
+                                            <div className="self-start p-2 rounded-full hover:bg-zinc-800 text-white cursor-pointer">
+                                                <Pencil className="w-4 h-4" />
+                                            </div>
+                                        }
+                                        text="Update batch name"
+                                    />
                                 }
                                 batchName={data.batchName}
                             />
