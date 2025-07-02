@@ -1,7 +1,7 @@
 import { BaseRepository } from "@codeflare/common";
 import { FilterQuery, Model, QueryOptions, UpdateQuery } from "mongoose";
 import { IReportSchema } from "../../entities";
-import { IReportRepository } from "../interface";
+import { IReportRepository } from "../interfaces";
 
 // Implementation for Report Repository
 export class ReportRepository

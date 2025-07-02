@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { ReportRepository } from "../repository/implementation";
-import { ReportService } from "../service/implementation";
-import { ReportController } from "../controller/implementation";
-import { Report } from "../model";
-import { checkBatch } from "../middleware";
+import { ReportRepository } from "../repository/implementations";
+import { ReportService } from "../service/implementations";
+import { ReportController } from "../controller/implementations";
+import { Report } from "../models";
+import { checkBatch } from "../middlewares";
 
 const router = Router();
 

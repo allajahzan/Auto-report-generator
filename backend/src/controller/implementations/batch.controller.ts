@@ -4,8 +4,8 @@ import {
     ResponseMessage,
     SendResponse,
 } from "@codeflare/common";
-import { IBatchController } from "../interface";
-import { IBatchService } from "../../service/interface";
+import { IBatchController } from "../interfaces";
+import { IBatchService } from "../../service/interfaces";
 
 // Implementation for Batch Controller
 export class BatchController implements IBatchController {

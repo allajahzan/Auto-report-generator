@@ -4,8 +4,8 @@ import {
     ResponseMessage,
     SendResponse,
 } from "@codeflare/common";
-import { IRreportController } from "../interface";
-import { IReportService } from "../../service/interface";
+import { IRreportController } from "../interfaces";
+import { IReportService } from "../../service/interfaces";
 
 // Implementation for Report Controller
 export class ReportController implements IRreportController {

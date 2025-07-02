@@ -2,7 +2,7 @@ import express from "express";
 import { errorHandler } from "@codeflare/common";
 import router from "./routes";
 import cors from "cors";
-import { checkAuth } from "./middleware";
+import { checkAuth } from "./middlewares";
 import morgan from "morgan";
 
 // create app
@@ -11,7 +11,10 @@ const app = express();
 // middlewares
 app.use(
     cors({
-        origin: "http://localhost:5173",
+        origin: [
+            "http://localhost:5173",
+            "https://auto-report-generator.vercel.app",
+        ],
     })
 );
 

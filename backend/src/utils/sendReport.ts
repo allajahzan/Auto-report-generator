@@ -2,8 +2,8 @@ import { WASocket } from "@whiskeysockets/baileys";
 import {
     BatchRepository,
     ReportRepository,
-} from "../repository/implementation";
-import { Batch, Report } from "../model";
+} from "../repository/implementations";
+import { Batch, Report } from "../models";
 
 // Batch repository
 const batchRepository = new BatchRepository(Batch);

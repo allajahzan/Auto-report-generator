@@ -1,9 +1,9 @@
 import { BadRequestError, ForbiddenError } from "@codeflare/common";
-import { IReportService } from "../interface";
-import { IReportRepository } from "../../repository/interface";
+import { IReportService } from "../interfaces";
+import { IReportRepository } from "../../repository/interfaces";
 import { IReportDto } from "../../dtos";
 import { getSocket } from "../../bot";
-import { sendTaskReport } from "../../utils/sendReport";
+import { sendTaskReport } from "../../utils";
 
 // Implementation for Report Service
 export class ReportService implements IReportService {

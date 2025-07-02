@@ -1,6 +1,6 @@
 import { WASocket } from "@whiskeysockets/baileys";
 import schedule from "node-schedule";
-import { sendTaskReport } from "../utils/sendReport";
+import { sendTaskReport } from "../utils";
 
 // Schedule task report
 export const scheduleTaskReport = async (

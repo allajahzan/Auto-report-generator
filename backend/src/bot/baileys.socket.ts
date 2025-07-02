@@ -9,8 +9,8 @@ import fs from "fs";
 import {
     BatchRepository,
     ReportRepository,
-} from "../repository/implementation";
-import { Batch, Report } from "../model";
+} from "../repository/implementations";
+import { Batch, Report } from "../models";
 import { getActiveUsers, getIO } from "../socket";
 import { detectIsTopic, detectTaskType } from "../utils";
 import { scheduleTaskReport } from "../job";

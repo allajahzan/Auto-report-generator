@@ -4,12 +4,12 @@ import {
     ForbiddenError,
     NotFoundError,
 } from "@codeflare/common";
-import { IBatchService } from "../interface";
-import { IBatchRepository } from "../../repository/interface";
+import { IBatchService } from "../interfaces";
+import { IBatchRepository } from "../../repository/interfaces";
 import { IBatchDto, IParticipantDto } from "../../dtos";
 import { getSocket, removeSocket } from "../../bot";
 import { IBatchSchema } from "../../entities";
-import { withTimeout } from "../../utils/timeout";
+import { withTimeout } from "../../utils";
 
 // Implementation for Batch Service
 export class BatchService implements IBatchService {
