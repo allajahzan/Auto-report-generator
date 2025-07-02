@@ -1,4 +1,4 @@
-const topicRegex = /topic:/i;
+const topicRegex = /topic:\s*(.+)/i;
 
 // Detext isTopic
 export const detectIsTopic = (text: string): string => {

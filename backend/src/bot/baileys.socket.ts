@@ -108,7 +108,7 @@ export const startBaileysSocket = async (
                     if (connectedPhone !== phoneNumber) {
                         emitStatus(
                             "error",
-                            "Scanned WhatsApp doesn't match provided phone number 😒"
+                            "Scanned WhatsApp doesn't match phone number 😒"
                         );
 
                         // Logout completely
@@ -610,10 +610,14 @@ export const startBaileysSocket = async (
 
                                         // Notify the sender
                                         try {
-                                            await sock.sendMessage(sender.id, {
-                                                text: `Dear ${sender.name || "student"
-                                                    },\nYour ${isReportExist.taskType.toLowerCase()} submission was removed as it wasn't sent within the time limit. Please resend it within the next 10 minutes to avoid being marked absent ⏱️.\n\n-Report Buddy`,
-                                            });
+                                            await sock.sendMessage(
+                                                sender.id,
+                                                {
+                                                    text: `Dear ${sender.name || "student"
+                                                        },\n\nYour ${isReportExist.taskType.toLowerCase()} submission was removed as it wasn't sent within the time limit. Please resend it within the next 10 minutes to avoid being marked absent ⏱️.\n\n-Report Buddy`,
+                                                },
+                                                { quoted: msg }
+                                            );
                                         } catch (err) {
                                             console.error(
                                                 "Error sending warning message to sender:",
@@ -655,8 +659,6 @@ export const startBaileysSocket = async (
                     try {
                         // Message deleted
                         if (update.update.messageStubType === 1) {
-                            console.log("Message deleted");
-
                             const messageId = update.key.id;
 
                             const isMessageFromGroup =
@@ -671,7 +673,7 @@ export const startBaileysSocket = async (
                             )
                                 continue;
 
-                            console.log("From our group");
+                            console.log("Message deleted from our group:", phoneNumber);
 
                             // Correct date with proper timezone
                             const now = new Date();

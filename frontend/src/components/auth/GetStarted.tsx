@@ -154,6 +154,7 @@ export function GetStarted() {
             </div>
             {/* Left Side */}
             <div className="flex flex-col items-center md:items-start justify-center">
+                <>
                 <motion.h1
                     initial={{ opacity: 0, x: -30 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -185,7 +186,7 @@ export function GetStarted() {
                             <Input
                                 id="work"
                                 type="text"
-                                placeholder="Enter mobile number"
+                                placeholder="Enter phone number"
                                 autoComplete="off"
                                 defaultValue={phoneNumber.current}
                                 onChange={(e) => (phoneNumber.current = e.target.value)}
@@ -230,6 +231,7 @@ export function GetStarted() {
                         </Button>
                     </motion.div>
                 </div>
+                </>
             </div>
 
             {/* Right Side */}

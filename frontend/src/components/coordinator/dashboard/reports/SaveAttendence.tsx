@@ -73,7 +73,7 @@ export function SaveAttendence({ batch, selectedStudents }: PropsType) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["report"] });
-            notify("Task attendence updated successfully 👏");
+            notify("Task attendance has been updated successfully 👏");
         },
         onError: (error) => {
             console.log(error);

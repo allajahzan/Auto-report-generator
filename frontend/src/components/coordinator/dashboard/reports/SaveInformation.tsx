@@ -54,7 +54,7 @@ export function SaveInformation({ batch, reportInfo }: PropsType) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["report"] });
-            notify("Task information updated successfully 👏");
+            notify("Task details have been updated successfully 👏");
         },
         onError: (error) => {
             console.log(error);

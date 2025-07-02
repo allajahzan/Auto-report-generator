@@ -148,7 +148,7 @@ export function Reports({ data: batch }: PropsType) {
                                     <FileText className="w-4 h-4" />
                                 </div>
                                 <h1 className="text-lg font-extrabold text-white tracking-wide">
-                                    Task Information
+                                    Task Details
                                 </h1>
                             </div>
 
