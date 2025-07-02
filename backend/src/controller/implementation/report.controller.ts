@@ -56,10 +56,14 @@ export class ReportController implements IRreportController {
         next: NextFunction
     ): Promise<void> {
         try {
-            const { batchId } = req.query;
+            const { batchId, coordinatorId } = req.query;
             const data = req.body;
 
-            await this.reportService.updateReportAttendence(batchId as string, data);
+            await this.reportService.updateReportAttendence(
+                batchId as string,
+                coordinatorId as string,
+                data
+            );
 
             SendResponse(res, HTTPStatusCode.OK, ResponseMessage.SUCCESS);
         } catch (err: unknown) {
